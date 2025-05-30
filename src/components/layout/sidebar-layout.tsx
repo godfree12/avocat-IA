@@ -1,8 +1,9 @@
+
 "use client";
 
 import type { PropsWithChildren } from 'react';
 import Link from 'next/link';
-import { Home, Briefcase, GalleryVerticalEnd, Mail, Settings, BarChart3 } from 'lucide-react';
+import { Home, User, Briefcase, Zap, Mail, Settings, LogOut, BarChart3, MessageCircle } from 'lucide-react';
 import {
   SidebarProvider,
   Sidebar,
@@ -31,8 +32,9 @@ import {
 
 const navItems = [
   { href: '#hero', label: 'Accueil', icon: Home },
-  { href: '#services', label: 'Services', icon: Briefcase },
-  { href: '#portfolio', label: 'Portfolio', icon: GalleryVerticalEnd },
+  { href: '#apropos', label: 'À Propos', icon: User },
+  { href: '#expertise', label: 'Expertises', icon: Briefcase },
+  { href: '#outils-ia', label: 'Outils IA', icon: Zap },
   { href: '#contact', label: 'Contact', icon: Mail },
 ];
 
@@ -41,32 +43,33 @@ function UserProfileDropdown() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src="https://placehold.co/100x100.png" alt="User Avatar" data-ai-hint="profile avatar" />
-            <AvatarFallback>AE</AvatarFallback>
+          <Avatar className="h-10 w-10 border-2 border-primary/50">
+            <AvatarImage src="https://placehold.co/100x100/0a84ff/FFFFFF.png?text=JD" alt="Maître Jean Dupont" data-ai-hint="lawyer avatar" />
+            <AvatarFallback className="bg-primary text-primary-foreground">JD</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">Élégance Admin</p>
+            <p className="text-sm font-medium leading-none">Maître Jean Dupont</p>
             <p className="text-xs leading-none text-muted-foreground">
-              admin@elegance.com
+              contact@jeandupont.avocat
             </p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem>
           <Settings className="mr-2 h-4 w-4" />
-          <span>Paramètres</span>
+          <span>Paramètres du compte</span>
         </DropdownMenuItem>
         <DropdownMenuItem>
           <BarChart3 className="mr-2 h-4 w-4" />
-          <span>Statistiques</span>
+          <span>Statistiques (Pro)</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem>
+          <LogOut className="mr-2 h-4 w-4" />
           <span>Déconnexion</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -74,9 +77,21 @@ function UserProfileDropdown() {
   );
 }
 
-
 function MainNav() {
-  const { state } = useSidebar();
+  const { state, setOpenMobile } = useSidebar();
+  
+  const handleLinkClick = () => {
+    // Close mobile sidebar on link click
+    if (state === 'expanded' && typeof setOpenMobile === 'function') {
+       // Check if it's mobile context based on how sidebar works
+       // This is a bit of a hack, ideally useSidebar would expose isMobile more directly or have a close function
+       const sb = document.querySelector('[data-sidebar="sidebar"][data-mobile="true"]');
+       if (sb) {
+        setOpenMobile(false);
+       }
+    }
+  };
+
   return (
     <nav className="flex flex-col gap-1 px-2">
       {navItems.map((item) => (
@@ -85,7 +100,8 @@ function MainNav() {
             <SidebarMenuButton
               tooltip={item.label}
               asChild
-              className="w-full justify-start"
+              className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              onClick={handleLinkClick}
             >
               <a>
                 <item.icon className="h-5 w-5" />
@@ -102,29 +118,29 @@ function MainNav() {
 export function SidebarLayout({ children }: PropsWithChildren) {
   return (
     <SidebarProvider defaultOpen>
-      <Sidebar collapsible="icon" side="left" variant="sidebar">
+      <Sidebar collapsible="icon" side="left" variant="sidebar" className="border-r border-sidebar-border">
         <SidebarHeader className="p-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <Link href="#hero" className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center">
              <Logo className="h-8 w-8 text-primary" />
-             <h1 className="text-xl font-semibold tracking-tight group-data-[collapsible=icon]:hidden">
-                L'Apparence Élégante
+             <h1 className="text-xl font-orbitron font-bold tracking-tight group-data-[collapsible=icon]:hidden text-foreground">
+                Jean Dupont
             </h1>
-          </div>
+          </Link>
           <SidebarTrigger className="group-data-[collapsible=icon]:hidden" />
         </SidebarHeader>
-        <Separator />
+        <Separator className="bg-sidebar-border" />
         <SidebarContent>
           <SidebarMenu>
             <MainNav />
           </SidebarMenu>
         </SidebarContent>
-        <Separator />
+        <Separator className="bg-sidebar-border"/>
         <SidebarFooter className="p-4 flex items-center justify-between group-data-[collapsible=icon]:justify-center">
            <div className="group-data-[collapsible=icon]:hidden">
             <UserProfileDropdown />
            </div>
            <div className="group-data-[collapsible=icon]:block hidden">
-            <UserProfileDropdown />
+            <UserProfileDropdown /> {/* Ensure it's visible in collapsed icon mode too */}
            </div>
         </SidebarFooter>
       </Sidebar>
