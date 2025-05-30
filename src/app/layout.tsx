@@ -1,22 +1,23 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Orbitron, Inter } from 'next/font/google';
 import './globals.css';
 import { SidebarLayout } from '@/components/layout/sidebar-layout';
 import { Toaster } from "@/components/ui/toaster";
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
+const orbitronFont = Orbitron({
   subsets: ['latin'],
+  variable: '--font-orbitron',
+  weight: ['400', '500', '700', '900'], // Specify needed weights
 });
 
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
+const interFont = Inter({
   subsets: ['latin'],
+  variable: '--font-inter',
 });
 
 export const metadata: Metadata = {
-  title: "L'Apparence Élégante",
-  description: 'Un site web généré avec une apparence élégante et un design sophistiqué.',
+  title: "Maître Jean Dupont - Avocat d'élite à Paris",
+  description: "Cabinet d'avocat moderne et innovant. Expertise juridique et solutions IA pour défendre vos destins.",
 };
 
 export default function RootLayout({
@@ -26,7 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" className="dark">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${orbitronFont.variable} ${interFont.variable} font-sans antialiased`}>
         <SidebarLayout>{children}</SidebarLayout>
         <Toaster />
       </body>

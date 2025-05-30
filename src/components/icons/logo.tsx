@@ -10,12 +10,12 @@ export function Logo(props: SVGProps<SVGSVGElement>) {
       strokeWidth="8"
       strokeLinecap="round"
       strokeLinejoin="round"
-      aria-label="L'Apparence Élégante Logo"
+      aria-label="Maître Jean Dupont Logo"
       {...props}
     >
-      <path d="M20 80 Q 50 20, 80 80" />
-      <path d="M30 70 Q 50 40, 70 70" />
-      <circle cx="50" cy="50" r="5" fill="currentColor" stroke="none" />
+      {/* Simple abstract symbol, can be replaced with actual logo */}
+      <path d="M25 75 L50 25 L75 75 Z" strokeWidth="10" />
+      <path d="M20 80 H 80" strokeWidth="10" />
     </svg>
   );
 }
