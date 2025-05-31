@@ -115,6 +115,8 @@ export default function HomePage() {
   const contactFormRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
+    if (!contactFormState) return; // Safeguard
+
     if (contactFormState.status === 'success' && contactFormState.message) {
       toast({
         title: "Succès!",
@@ -123,7 +125,6 @@ export default function HomePage() {
       contactFormRef.current?.reset();
     } else if (contactFormState.status === 'error' && contactFormState.message) {
       let description = contactFormState.message;
-      // Removed detailed error construction from toast to keep it simple, errors are displayed inline
       toast({
         title: "Erreur d'envoi",
         description: description,
@@ -363,22 +364,22 @@ export default function HomePage() {
                     <div>
                       <label htmlFor="name" className="block text-sm font-medium text-muted-foreground mb-1">Nom complet</label>
                       <Input type="text" name="name" id="name" required className="bg-input border-border focus:border-primary focus:ring-primary" aria-describedby="name-error" />
-                      {contactFormState.errors?.name && <p id="name-error" className="text-xs text-destructive mt-1">{contactFormState.errors.name.join(', ')}</p>}
+                      {contactFormState && contactFormState.errors?.name && <p id="name-error" className="text-xs text-destructive mt-1">{contactFormState.errors.name.join(', ')}</p>}
                     </div>
                     <div>
                       <label htmlFor="email" className="block text-sm font-medium text-muted-foreground mb-1">Adresse e-mail</label>
                       <Input type="email" name="email" id="email" required className="bg-input border-border focus:border-primary focus:ring-primary" aria-describedby="email-error" />
-                      {contactFormState.errors?.email && <p id="email-error" className="text-xs text-destructive mt-1">{contactFormState.errors.email.join(', ')}</p>}
+                      {contactFormState && contactFormState.errors?.email && <p id="email-error" className="text-xs text-destructive mt-1">{contactFormState.errors.email.join(', ')}</p>}
                     </div>
                     <div>
                       <label htmlFor="subject" className="block text-sm font-medium text-muted-foreground mb-1">Objet</label>
                       <Input type="text" name="subject" id="subject" required className="bg-input border-border focus:border-primary focus:ring-primary" aria-describedby="subject-error" />
-                      {contactFormState.errors?.subject && <p id="subject-error" className="text-xs text-destructive mt-1">{contactFormState.errors.subject.join(', ')}</p>}
+                      {contactFormState && contactFormState.errors?.subject && <p id="subject-error" className="text-xs text-destructive mt-1">{contactFormState.errors.subject.join(', ')}</p>}
                     </div>
                     <div>
                       <label htmlFor="message" className="block text-sm font-medium text-muted-foreground mb-1">Votre message</label>
                       <Textarea name="message" id="message" rows={4} required className="bg-input border-border focus:border-primary focus:ring-primary" aria-describedby="message-error" />
-                      {contactFormState.errors?.message && <p id="message-error" className="text-xs text-destructive mt-1">{contactFormState.errors.message.join(', ')}</p>}
+                      {contactFormState && contactFormState.errors?.message && <p id="message-error" className="text-xs text-destructive mt-1">{contactFormState.errors.message.join(', ')}</p>}
                     </div>
                     <div>
                       <SubmitContactButton />
@@ -472,4 +473,3 @@ export default function HomePage() {
     </div>
   );
 }
-
