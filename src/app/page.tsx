@@ -3,8 +3,8 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState, type FormEvent, useEffect, useRef } from 'react';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useState, type FormEvent, useEffect, useRef, useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -111,18 +111,20 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const { toast } = useToast();
-  const [contactFormState, contactFormAction] = useFormState(sendContactMessage, initialContactFormState);
+  const [contactFormState, contactFormAction] = useActionState(sendContactMessage, initialContactFormState);
   const contactFormRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
-    if (!contactFormState) return; // Safeguard
+    if (!contactFormState) return; 
 
     if (contactFormState.status === 'success' && contactFormState.message) {
       toast({
         title: "Succès!",
         description: contactFormState.message,
       });
-      contactFormRef.current?.reset();
+      if (contactFormRef.current) {
+        contactFormRef.current.reset();
+      }
     } else if (contactFormState.status === 'error' && contactFormState.message) {
       let description = contactFormState.message;
       toast({
