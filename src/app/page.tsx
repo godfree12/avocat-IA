@@ -13,10 +13,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Footer } from '@/components/layout/footer';
 import { 
   ChevronRight, User, Briefcase, Zap, Mail, Linkedin, MessageCircle, Scale, Users, Home, Globe2, 
-  Bot, FileText, CalendarDays, UploadCloud, Send
+  Bot, FileText, CalendarDays, UploadCloud, Send, FileScan
 } from 'lucide-react';
-import { legalChat } from '@/ai/flows/legal-chat-flow';
-import { preEvaluateCase } from '@/ai/flows/case-pre-evaluation-flow';
+import { legalChat, type LegalChatOutput } from '@/ai/flows/legal-chat-flow';
+import { preEvaluateCase, type CasePreEvaluationOutput } from '@/ai/flows/case-pre-evaluation-flow';
+import { analyzeDocument, type DocumentAnalysisOutput } from '@/ai/flows/document-analyzer-flow';
 import { sendContactMessage, type ContactFormState } from '@/app/actions';
 import { useToast } from "@/hooks/use-toast";
 import { Label } from '@/components/ui/label';
@@ -88,11 +89,21 @@ export default function HomePage() {
   const [contactFormState, contactFormAction] = useActionState(sendContactMessage, initialContactFormState);
   const contactFormRef = useRef<HTMLFormElement>(null);
 
+  // Case Pre-evaluation Modal State
   const [caseEvaluationInput, setCaseEvaluationInput] = useState({ caseType: '', caseDescription: '' });
   const [caseEvaluationResult, setCaseEvaluationResult] = useState<string | null>(null);
   const [isEvaluatingCase, setIsEvaluatingCase] = useState(false);
   const [caseEvaluationError, setCaseEvaluationError] = useState<string | null>(null);
   const [isCaseEvaluationModalOpen, setIsCaseEvaluationModalOpen] = useState(false);
+
+  // Document Analysis Modal State
+  const [isDocumentAnalysisModalOpen, setIsDocumentAnalysisModalOpen] = useState(false);
+  const [selectedPdfFile, setSelectedPdfFile] = useState<File | null>(null);
+  const [pdfAnalysisResult, setPdfAnalysisResult] = useState<DocumentAnalysisOutput | null>(null);
+  const [isAnalyzingDocument, setIsAnalyzingDocument] = useState(false);
+  const [pdfAnalysisError, setPdfAnalysisError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
 
   const aiTools = [
     {
@@ -105,9 +116,9 @@ export default function HomePage() {
     {
       icon: UploadCloud,
       title: 'Analyseur de Documents PDF',
-      description: 'Glissez-déposez un contrat ou document PDF pour un résumé automatique et une détection des points sensibles.',
+      description: 'Glissez-déposez ou sélectionnez un contrat/document PDF pour un résumé et une détection des points sensibles par IA.',
       actionText: 'Analyser un document',
-      href: '#document-analyzer-placeholder', 
+      onClickAction: () => setIsDocumentAnalysisModalOpen(true),
     },
     {
       icon: FileText,
@@ -121,7 +132,7 @@ export default function HomePage() {
       title: 'Prise de RDV Intelligente',
       description: 'Notre agenda IA vous aide à trouver le créneau parfait selon l\'urgence et le domaine de votre affaire.',
       actionText: 'Prendre RDV',
-      href: 'https://calendly.com',
+      href: 'https://calendly.com', // Replace with actual Calendly link
       external: true,
     }
   ];
@@ -202,11 +213,79 @@ export default function HomePage() {
   const handleCaseEvaluationModalOpenChange = (open: boolean) => {
     setIsCaseEvaluationModalOpen(open);
     if (!open) {
-      // Reset results when modal is closed
       setCaseEvaluationResult(null);
       setCaseEvaluationError(null);
-      // Optionally reset form fields too, or keep them if user might reopen to continue
-      // setCaseEvaluationInput({ caseType: '', caseDescription: '' }); 
+      setCaseEvaluationInput({ caseType: '', caseDescription: '' });
+    }
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      const file = event.target.files[0];
+      if (file.type === "application/pdf") {
+        setSelectedPdfFile(file);
+        setPdfAnalysisError(null); // Clear previous error if any
+      } else {
+        setSelectedPdfFile(null);
+        setPdfAnalysisError("Format de fichier invalide. Veuillez sélectionner un fichier PDF.");
+        if(fileInputRef.current) fileInputRef.current.value = ""; // Reset file input
+      }
+    } else {
+      setSelectedPdfFile(null);
+    }
+  };
+
+  const handleDocumentAnalysisSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selectedPdfFile || isAnalyzingDocument) {
+      setPdfAnalysisError("Veuillez sélectionner un fichier PDF à analyser.");
+      return;
+    }
+
+    setIsAnalyzingDocument(true);
+    setPdfAnalysisResult(null);
+    setPdfAnalysisError(null);
+
+    try {
+      const reader = new FileReader();
+      reader.readAsDataURL(selectedPdfFile);
+      reader.onloadend = async () => {
+        const base64data = reader.result as string;
+        try {
+          const result = await analyzeDocument({
+            pdfDataUri: base64data,
+            fileName: selectedPdfFile.name,
+          });
+          setPdfAnalysisResult(result);
+        } catch (flowError: any) {
+           console.error("Error calling documentAnalyzerFlow:", flowError);
+           setPdfAnalysisError("Désolé, une erreur s'est produite lors de l'analyse du document. Veuillez réessayer.");
+           setPdfAnalysisResult(null);
+        } finally {
+          setIsAnalyzingDocument(false);
+        }
+      };
+      reader.onerror = () => {
+        console.error("Error reading file for analysis");
+        setPdfAnalysisError("Erreur lors de la lecture du fichier. Veuillez réessayer.");
+        setIsAnalyzingDocument(false);
+      };
+    } catch (error) {
+      console.error("Error initiating file read for analysis:", error);
+      setPdfAnalysisError("Une erreur inattendue s'est produite. Veuillez réessayer.");
+      setIsAnalyzingDocument(false);
+    }
+  };
+
+  const handleDocumentAnalysisModalOpenChange = (open: boolean) => {
+    setIsDocumentAnalysisModalOpen(open);
+    if (!open) {
+      setSelectedPdfFile(null);
+      setPdfAnalysisResult(null);
+      setPdfAnalysisError(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""; // Reset file input on close
+      }
     }
   };
 
@@ -411,6 +490,7 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* Case Pre-evaluation Modal */}
         <Dialog open={isCaseEvaluationModalOpen} onOpenChange={handleCaseEvaluationModalOpenChange}>
           <DialogContent className="sm:max-w-[600px] bg-card text-card-foreground border-border/70">
             <DialogHeader>
@@ -469,7 +549,13 @@ export default function HomePage() {
               </div>
             </form>
 
-            {caseEvaluationResult && (
+            {isEvaluatingCase && (
+              <div className="text-center text-muted-foreground py-4">
+                <p>Analyse en cours, veuillez patienter...</p>
+              </div>
+            )}
+
+            {caseEvaluationResult && !isEvaluatingCase && (
               <div className="mt-6 p-4 bg-secondary/50 border border-border/50 rounded-lg">
                 <h4 className="text-lg font-orbitron text-primary mb-2">Résultat de la Pré-évaluation IA :</h4>
                 <p className="text-muted-foreground whitespace-pre-wrap">{caseEvaluationResult}</p>
@@ -480,6 +566,80 @@ export default function HomePage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Document Analyzer Modal */}
+        <Dialog open={isDocumentAnalysisModalOpen} onOpenChange={handleDocumentAnalysisModalOpenChange}>
+          <DialogContent className="sm:max-w-[600px] bg-card text-card-foreground border-border/70">
+            <DialogHeader>
+              <div className="flex items-center mb-2">
+                <FileScan className="h-8 w-8 text-primary mr-3 shrink-0" />
+                <DialogTitle className="text-2xl font-orbitron text-primary">Analyseur de Document IA</DialogTitle>
+              </div>
+              <DialogDescription className="text-muted-foreground">
+                Téléchargez un document PDF (contrat, etc.) pour obtenir un résumé et une identification des points sensibles par IA.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <form onSubmit={handleDocumentAnalysisSubmit} className="space-y-6 py-4">
+              <div>
+                <Label htmlFor="pdfFile" className="block text-sm font-medium text-muted-foreground mb-1">Fichier PDF</Label>
+                <Input
+                  type="file"
+                  id="pdfFile"
+                  name="pdfFile"
+                  accept=".pdf"
+                  onChange={handleFileChange}
+                  ref={fileInputRef}
+                  className="w-full bg-input border-border focus:border-primary focus:ring-primary file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                />
+                 {selectedPdfFile && <p className="text-xs text-muted-foreground mt-1">Fichier sélectionné : {selectedPdfFile.name}</p>}
+              </div>
+             
+              {pdfAnalysisError && (
+                <p className="text-sm text-destructive">{pdfAnalysisError}</p>
+              )}
+              <div>
+                <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-primary/50" disabled={isAnalyzingDocument || !selectedPdfFile}>
+                  {isAnalyzingDocument ? "Analyse en cours..." : "Analyser le Document"}
+                  <Zap className="ml-2 h-5 w-5" />
+                </Button>
+              </div>
+            </form>
+
+            {isAnalyzingDocument && (
+              <div className="text-center text-muted-foreground py-4">
+                <p>Analyse en cours, veuillez patienter...</p>
+              </div>
+            )}
+
+            {pdfAnalysisResult && !isAnalyzingDocument && (
+              <div className="mt-6 p-4 bg-secondary/50 border border-border/50 rounded-lg max-h-80 overflow-y-auto custom-scrollbar">
+                <h4 className="text-lg font-orbitron text-primary mb-2">Résultat de l'Analyse IA :</h4>
+                <div className="space-y-3">
+                  <div>
+                    <h5 className="font-semibold text-foreground/90">Résumé :</h5>
+                    <p className="text-muted-foreground whitespace-pre-wrap text-sm">{pdfAnalysisResult.summary}</p>
+                  </div>
+                  {pdfAnalysisResult.sensitivePoints && pdfAnalysisResult.sensitivePoints.length > 0 && (
+                    <div>
+                      <h5 className="font-semibold text-foreground/90">Points Sensibles Identifiés :</h5>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 text-sm">
+                        {pdfAnalysisResult.sensitivePoints.map((point, index) => (
+                          <li key={index}>{point}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  <p className="text-xs italic text-muted-foreground/80 pt-2 border-t border-border/30 mt-3">{pdfAnalysisResult.disclaimer}</p>
+                </div>
+              </div>
+            )}
+            <DialogFooter className="mt-2">
+              <Button variant="outline" onClick={() => handleDocumentAnalysisModalOpenChange(false)}>Fermer</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
 
         <Separator className="my-16 md:my-24 bg-border/50" />
 
