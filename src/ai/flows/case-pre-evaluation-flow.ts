@@ -74,11 +74,15 @@ const casePreEvaluationFlow = ai.defineFlow(
     outputSchema: CasePreEvaluationOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    if (!output) {
-      return { evaluation: "Je suis désolé, une difficulté technique m'empêche de traiter votre demande pour le moment. Veuillez réessayer plus tard." };
+    try {
+      const {output} = await prompt(input);
+      if (!output) {
+        return { evaluation: "Je suis désolé, une difficulté technique m'empêche de traiter votre demande pour le moment. Veuillez réessayer plus tard." };
+      }
+      return output;
+    } catch (error) {
+      console.error("Error in casePreEvaluationFlow LLM call:", error);
+      return { evaluation: "Le service IA est temporairement indisponible ou une erreur de communication s'est produite. Veuillez réessayer plus tard." };
     }
-    return output;
   }
 );
-

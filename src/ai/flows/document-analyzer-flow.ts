@@ -71,6 +71,8 @@ Structurez votre sortie pour correspondre au schéma JSON attendu (summary, sens
   }
 });
 
+const baseDisclaimer = "Cette analyse est générée par une intelligence artificielle et est fournie à titre informatif uniquement. Elle ne constitue EN AUCUN CAS un avis juridique et ne saurait remplacer la consultation d'un avocat qualifié pour des conseils spécifiques à votre situation.";
+
 const documentAnalyzerFlow = ai.defineFlow(
   {
     name: 'documentAnalyzerFlow',
@@ -78,18 +80,27 @@ const documentAnalyzerFlow = ai.defineFlow(
     outputSchema: DocumentAnalysisOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    if (!output) {
-      return { 
-        summary: "Je suis désolé, une difficulté technique m'empêche d'analyser votre document pour le moment. Veuillez réessayer plus tard.",
+    try {
+      const {output} = await prompt(input);
+      if (!output) {
+        return {
+          summary: "Je suis désolé, une difficulté technique m'empêche d'analyser votre document pour le moment. Veuillez réessayer plus tard.",
+          sensitivePoints: [],
+          disclaimer: baseDisclaimer
+        };
+      }
+      // Ensure the disclaimer is always the standard one
+      return {
+        ...output,
+        disclaimer: baseDisclaimer
+      };
+    } catch (error) {
+      console.error("Error in documentAnalyzerFlow LLM call:", error);
+      return {
+        summary: "Le service IA est temporairement indisponible ou une erreur de communication s'est produite lors de l'analyse du document. Veuillez réessayer plus tard.",
         sensitivePoints: [],
-        disclaimer: "Cette analyse est générée par une intelligence artificielle et est fournie à titre informatif uniquement. Elle ne constitue EN AUCUN CAS un avis juridique et ne saurait remplacer la consultation d'un avocat qualifié pour des conseils spécifiques à votre situation."
+        disclaimer: baseDisclaimer
       };
     }
-    // Ensure the disclaimer is always the standard one, even if the model tries to be creative.
-    return {
-      ...output,
-      disclaimer: "Cette analyse est générée par une intelligence artificielle et est fournie à titre informatif uniquement. Elle ne constitue EN AUCUN CAS un avis juridique et ne saurait remplacer la consultation d'un avocat qualifié pour des conseils spécifiques à votre situation."
-    };
   }
 );

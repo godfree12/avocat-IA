@@ -66,13 +66,15 @@ const legalChatFlow = ai.defineFlow(
     outputSchema: LegalChatOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    if (!output) {
-      // This case should ideally not happen if the prompt is well-defined
-      // and the model generates valid output according to the schema.
-      // However, as a fallback, we can return a predefined message.
-      return { answer: "Je suis désolé, je n'ai pas pu générer de réponse pour le moment. Veuillez réessayer." };
+    try {
+      const {output} = await prompt(input);
+      if (!output) {
+        return { answer: "Je suis désolé, une difficulté technique m'empêche de traiter votre demande pour le moment. Veuillez réessayer plus tard." };
+      }
+      return output;
+    } catch (error) {
+      console.error("Error in legalChatFlow LLM call:", error);
+      return { answer: "Le service IA est temporairement indisponible ou une erreur de communication s'est produite. Veuillez réessayer plus tard." };
     }
-    return output;
   }
 );
