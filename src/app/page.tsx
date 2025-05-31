@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/button'; // Assuming Button is used elsewhere, keep import
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
@@ -76,19 +76,22 @@ const aiTools = [
 export default function HomePage() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
-      <main className="flex-1">
+      <main className="flex-grow"> {/* Changed flex-1 to flex-grow for clarity */}
         {/* Hero Section */}
         <section id="hero" className="min-h-screen flex flex-col justify-center items-center text-center relative overflow-hidden p-4 bg-gradient-to-b from-background via-background/90 to-background/80">
-          <Image
-            src="https://placehold.co/1920x1080/0b0f17/1f1f1f.png&text=+" // Empty text for cleaner placeholder
-            alt="Skyline nocturne de Paris ou fond abstrait futuriste"
-            layout="fill"
-            objectFit="cover"
-            quality={80}
-            className="absolute inset-0 z-0 opacity-30"
-            data-ai-hint="dark city skyline night"
-            priority
-          />
+          <video
+            autoPlay
+            loop
+            playsInline
+            muted
+            className="absolute inset-0 z-0 w-full h-full object-cover opacity-30 video-no-controls"
+          >
+            <source src="/avocat.mp4" type="video/mp4" style={{ objectFit: 'cover', pointerEvents: 'none' }} />
+            {/* Add other source types if available for broader browser support */}
+            Your browser does not support the video tag.
+
+          </video> {/* Correctly closed the video tag */}
+        
           <div className="relative z-10 animate-fade-in-down">
             <h1 className="text-5xl md:text-7xl font-orbitron font-bold tracking-tight mb-4">
               Maître Jean Dupont
