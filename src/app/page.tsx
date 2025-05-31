@@ -16,8 +16,12 @@ import {
   Bot, FileText, CheckCircle, CalendarDays, UploadCloud, Send
 } from 'lucide-react';
 import { legalChat } from '@/ai/flows/legal-chat-flow';
+import { preEvaluateCase } from '@/ai/flows/case-pre-evaluation-flow';
 import { sendContactMessage, type ContactFormState } from '@/app/actions';
 import { useToast } from "@/hooks/use-toast";
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 
 const expertiseAreas = [
   {
@@ -65,14 +69,14 @@ const aiTools = [
     title: 'Analyseur de Documents PDF',
     description: 'Glissez-déposez un contrat ou document PDF pour un résumé automatique et une détection des points sensibles.',
     actionText: 'Analyser un document',
-    href: '#document-analyzer-placeholder',
+    href: '#document-analyzer-placeholder', 
   },
   {
     icon: FileText,
     title: 'Pré-évaluation de Cas IA',
     description: 'Remplissez un court formulaire pour une estimation par IA des chances de succès de votre dossier.',
     actionText: 'Évaluer mon cas',
-    href: '#case-evaluation-placeholder',
+    href: '#case-evaluation-form', // Updated href
   },
   {
     icon: CalendarDays,
@@ -108,11 +112,17 @@ function SubmitContactButton() {
 export default function HomePage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentMessage, setCurrentMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingChat, setIsLoadingChat] = useState(false);
 
   const { toast } = useToast();
   const [contactFormState, contactFormAction] = useActionState(sendContactMessage, initialContactFormState);
   const contactFormRef = useRef<HTMLFormElement>(null);
+
+  const [caseEvaluationInput, setCaseEvaluationInput] = useState({ caseType: '', caseDescription: '' });
+  const [caseEvaluationResult, setCaseEvaluationResult] = useState<string | null>(null);
+  const [isEvaluatingCase, setIsEvaluatingCase] = useState(false);
+  const [caseEvaluationError, setCaseEvaluationError] = useState<string | null>(null);
+
 
   useEffect(() => {
     if (!contactFormState) return; 
@@ -137,12 +147,12 @@ export default function HomePage() {
 
   const handleSendMessage = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!currentMessage.trim() || isLoading) return;
+    if (!currentMessage.trim() || isLoadingChat) return;
 
     const newUserMessage: ChatMessage = { sender: 'user', text: currentMessage };
     setMessages(prev => [...prev, newUserMessage]);
     setCurrentMessage('');
-    setIsLoading(true);
+    setIsLoadingChat(true);
 
     try {
       const aiResponse = await legalChat({ question: newUserMessage.text });
@@ -153,9 +163,40 @@ export default function HomePage() {
       const errorMessage: ChatMessage = { sender: 'ai', text: "Désolé, une erreur s'est produite. Veuillez réessayer." };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
-      setIsLoading(false);
+      setIsLoadingChat(false);
     }
   };
+
+  const handleCasePreEvaluation = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!caseEvaluationInput.caseType || caseEvaluationInput.caseDescription.length < 50 || isEvaluatingCase) {
+      setCaseEvaluationError("Veuillez sélectionner un type d'affaire et fournir une description d'au moins 50 caractères.");
+      return;
+    }
+
+    setIsEvaluatingCase(true);
+    setCaseEvaluationResult(null);
+    setCaseEvaluationError(null);
+
+    try {
+      const result = await preEvaluateCase({
+        caseType: caseEvaluationInput.caseType,
+        caseDescription: caseEvaluationInput.caseDescription,
+      });
+      setCaseEvaluationResult(result.evaluation);
+    } catch (error: any) {
+      console.error("Error calling casePreEvaluationFlow:", error);
+      if (error.details && Array.isArray(error.details) && error.details[0]?.code === 'INVALID_ARGUMENT' && error.details[0]?.message) {
+         setCaseEvaluationError(`Erreur de validation : ${error.details[0].message}. Veuillez vérifier les informations fournies.`);
+      } else {
+        setCaseEvaluationError("Désolé, une erreur s'est produite lors de la pré-évaluation. Veuillez réessayer.");
+      }
+      setCaseEvaluationResult(null);
+    } finally {
+      setIsEvaluatingCase(false);
+    }
+  };
+
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
@@ -300,7 +341,7 @@ export default function HomePage() {
                 <h3 className="text-3xl font-orbitron text-primary">Assistant Juridique IA</h3>
               </div>
               <div className="space-y-4 h-80 overflow-y-auto p-4 border border-border/50 rounded-md mb-6 bg-background/70 custom-scrollbar">
-                {messages.length === 0 && !isLoading && (
+                {messages.length === 0 && !isLoadingChat && (
                   <div className="flex justify-center items-center h-full">
                     <p className="text-muted-foreground italic">Posez votre question pour commencer...</p>
                   </div>
@@ -315,7 +356,7 @@ export default function HomePage() {
                       </p>
                   </div>
                 ))}
-                {isLoading && (
+                {isLoadingChat && (
                   <div className="flex items-start">
                      <div className="max-w-[80%] p-3 rounded-lg shadow bg-secondary text-secondary-foreground rounded-bl-none">
                       <p className="text-sm italic">L'assistant IA est en train d'écrire...</p>
@@ -330,10 +371,10 @@ export default function HomePage() {
                   onChange={(e) => setCurrentMessage(e.target.value)}
                   placeholder="Posez votre question juridique ici..."
                   className="flex-grow bg-input border-border focus:border-primary focus:ring-primary text-base"
-                  disabled={isLoading}
+                  disabled={isLoadingChat}
                   aria-label="Votre question juridique"
                 />
-                <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-2.5 text-base" disabled={isLoading || !currentMessage.trim()}>
+                <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-2.5 text-base" disabled={isLoadingChat || !currentMessage.trim()}>
                   Envoyer
                   <Send className="ml-2 h-5 w-5" />
                 </Button>
@@ -341,6 +382,74 @@ export default function HomePage() {
               <p className="text-xs text-muted-foreground mt-3 text-center">
                 Cet assistant IA fournit des informations générales et ne constitue pas un avis juridique. Pour des conseils spécifiques, veuillez consulter Maître Dupont.
               </p>
+            </div>
+
+            {/* Case Pre-evaluation Form Section */}
+            <div id="case-evaluation-form" className="mt-12">
+              <Card className="bg-card text-card-foreground border-border/70 rounded-lg shadow-xl p-6 md:p-8">
+                <CardHeader className="p-0 mb-6">
+                  <div className="flex items-center mb-2">
+                    <FileText className="h-10 w-10 text-primary mr-4 shrink-0" />
+                    <CardTitle className="text-3xl font-orbitron text-primary">Pré-évaluation de Cas IA</CardTitle>
+                  </div>
+                  <CardDescription className="text-muted-foreground">
+                    Remplissez ce formulaire pour obtenir une pré-évaluation automatisée de votre situation par notre IA. Cela ne remplace pas une consultation.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <form onSubmit={handleCasePreEvaluation} className="space-y-6">
+                    <div>
+                      <Label htmlFor="caseType" className="block text-sm font-medium text-muted-foreground mb-1">Type d'affaire</Label>
+                      <Select
+                        name="caseType"
+                        value={caseEvaluationInput.caseType}
+                        onValueChange={(value) => setCaseEvaluationInput(prev => ({ ...prev, caseType: value }))}
+                        required
+                      >
+                        <SelectTrigger className="w-full bg-input border-border focus:border-primary focus:ring-primary">
+                          <SelectValue placeholder="Sélectionnez un type d'affaire" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover border-border">
+                          {expertiseAreas.map(area => (
+                            <SelectItem key={area.title} value={area.title}>
+                              {area.title}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="caseDescription" className="block text-sm font-medium text-muted-foreground mb-1">Description de votre situation (minimum 50 caractères)</Label>
+                      <Textarea
+                        name="caseDescription"
+                        id="caseDescription"
+                        rows={5}
+                        value={caseEvaluationInput.caseDescription}
+                        onChange={(e) => setCaseEvaluationInput(prev => ({ ...prev, caseDescription: e.target.value }))}
+                        required
+                        minLength={50}
+                        className="bg-input border-border focus:border-primary focus:ring-primary"
+                        placeholder="Décrivez en détail votre problème juridique, les faits importants, et ce que vous souhaitez obtenir."
+                      />
+                    </div>
+                    {caseEvaluationError && (
+                      <p className="text-sm text-destructive">{caseEvaluationError}</p>
+                    )}
+                    <div>
+                      <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-primary/50" disabled={isEvaluatingCase || !caseEvaluationInput.caseType || caseEvaluationInput.caseDescription.length < 50}>
+                        {isEvaluatingCase ? "Évaluation en cours..." : "Obtenir une Pré-évaluation IA"}
+                        <Zap className="ml-2 h-5 w-5" />
+                      </Button>
+                    </div>
+                  </form>
+                  {caseEvaluationResult && (
+                    <div className="mt-8 p-6 bg-secondary/50 border border-border/50 rounded-lg">
+                      <h4 className="text-xl font-orbitron text-primary mb-3">Résultat de la Pré-évaluation IA :</h4>
+                      <p className="text-muted-foreground whitespace-pre-wrap">{caseEvaluationResult}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           </div>
         </section>
