@@ -3,19 +3,10 @@
 
 import type { PropsWithChildren } from 'react';
 import Link from 'next/link';
-import { Home, User, Briefcase, Zap, Mail, Settings, LogOut, BarChart3, Menu as MenuIcon } from 'lucide-react';
+import { Home, User, Briefcase, Zap, Mail, Menu as MenuIcon } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Logo } from '@/components/icons/logo';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const navItems = [
@@ -26,45 +17,6 @@ const navItems = [
   { href: '#contact', label: 'Contact', icon: Mail },
 ];
 
-function UserProfileDropdown() {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-          <Avatar className="h-10 w-10 border-2 border-primary/50">
-            <AvatarImage src="https://placehold.co/100x100/0a84ff/FFFFFF.png?text=JD" alt="Maître Jean Dupont" data-ai-hint="lawyer avatar" />
-            <AvatarFallback className="bg-primary text-primary-foreground">JD</AvatarFallback>
-          </Avatar>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56" align="end" forceMount>
-        <DropdownMenuLabel className="font-normal">
-          <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">Maître Jean Dupont</p>
-            <p className="text-xs leading-none text-muted-foreground">
-              contact@jeandupont.avocat
-            </p>
-          </div>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem>
-          <Settings className="mr-2 h-4 w-4" />
-          <span>Paramètres du compte</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem>
-          <BarChart3 className="mr-2 h-4 w-4" />
-          <span>Statistiques (Pro)</span>
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem>
-          <LogOut className="mr-2 h-4 w-4" />
-          <span>Déconnexion</span>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
 export function HeaderNavigationLayout({ children }: PropsWithChildren) {
   const isMobile = useIsMobile();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -73,8 +25,6 @@ export function HeaderNavigationLayout({ children }: PropsWithChildren) {
     if (isMobile) {
       setMobileMenuOpen(false);
     }
-    // Smooth scroll for anchor links
-    // This logic might need to be in the Link components themselves if direct click handling is complex here
   };
 
   useEffect(() => {
@@ -108,9 +58,7 @@ export function HeaderNavigationLayout({ children }: PropsWithChildren) {
           </nav>
 
           <div className="flex items-center gap-2">
-            <div className="hidden md:block">
-              <UserProfileDropdown />
-            </div>
+            {/* UserProfileDropdown removed */}
             <Button
               variant="ghost"
               size="icon"
@@ -137,16 +85,13 @@ export function HeaderNavigationLayout({ children }: PropsWithChildren) {
                   </a>
                 </Link>
               ))}
-               <div className="mt-4 border-t border-border pt-4">
-                <UserProfileDropdown />
-               </div>
+               {/* UserProfileDropdown removed from mobile menu */}
             </nav>
           </div>
         )}
       </header>
 
       <main className="flex-1">
-        {/* The container and padding for main content are now handled by individual page sections or page.tsx itself */}
         {children}
       </main>
     </div>
