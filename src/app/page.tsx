@@ -1,12 +1,20 @@
+
+"use client";
+
 import Image from 'next/image';
-import { Button } from '@/components/ui/button'; // Assuming Button is used elsewhere, keep import
+import Link from 'next/link';
+import { useState, type FormEvent } from 'react'; // Added useState and FormEvent
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Footer } from '@/components/layout/footer';
-import { ChevronRight, User, Briefcase, Zap, Mail, Linkedin, MessageCircle, Scale, Users, Home, Globe2, Bot, FileText, CheckCircle, CalendarDays, UploadCloud } from 'lucide-react';
-import Link from 'next/link';
+import { 
+  ChevronRight, User, Briefcase, Zap, Mail, Linkedin, MessageCircle, Scale, Users, Home, Globe2, 
+  Bot, FileText, CheckCircle, CalendarDays, UploadCloud, Send // Added Send icon
+} from 'lucide-react';
+import { legalChat } from '@/ai/flows/legal-chat-flow'; // Imported the flow
 
 const expertiseAreas = [
   {
@@ -47,36 +55,67 @@ const aiTools = [
     title: 'Assistant Juridique IA',
     description: 'Posez vos questions juridiques de base et obtenez des réponses instantanées 24/7.',
     actionText: 'Dialoguer avec l\'IA',
-    href: '#chatbot-placeholder', // Placeholder link
+    href: '#chatbot-interface', // Updated link to point to the chat interface
   },
   {
     icon: UploadCloud,
     title: 'Analyseur de Documents PDF',
     description: 'Glissez-déposez un contrat ou document PDF pour un résumé automatique et une détection des points sensibles.',
     actionText: 'Analyser un document',
-    href: '#document-analyzer-placeholder',
+    href: '#document-analyzer-placeholder', // This would be another page or modal
   },
   {
     icon: FileText,
     title: 'Pré-évaluation de Cas IA',
     description: 'Remplissez un court formulaire pour une estimation par IA des chances de succès de votre dossier.',
     actionText: 'Évaluer mon cas',
-    href: '#case-evaluation-placeholder',
+    href: '#case-evaluation-placeholder', // This would be another page or modal
   },
   {
     icon: CalendarDays,
     title: 'Prise de RDV Intelligente',
     description: 'Notre agenda IA vous aide à trouver le créneau parfait selon l\'urgence et le domaine de votre affaire.',
     actionText: 'Prendre RDV',
-    href: 'https://calendly.com', // Example link
+    href: 'https://calendly.com',
     external: true,
   }
 ];
 
+interface ChatMessage {
+  sender: 'user' | 'ai';
+  text: string;
+}
+
 export default function HomePage() {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [currentMessage, setCurrentMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSendMessage = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!currentMessage.trim() || isLoading) return;
+
+    const newUserMessage: ChatMessage = { sender: 'user', text: currentMessage };
+    setMessages(prev => [...prev, newUserMessage]);
+    setCurrentMessage('');
+    setIsLoading(true);
+
+    try {
+      const aiResponse = await legalChat({ question: newUserMessage.text });
+      const newAiMessage: ChatMessage = { sender: 'ai', text: aiResponse.answer };
+      setMessages(prev => [...prev, newAiMessage]);
+    } catch (error) {
+      console.error("Error calling legalChat flow:", error);
+      const errorMessage: ChatMessage = { sender: 'ai', text: "Désolé, une erreur s'est produite. Veuillez réessayer." };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
-      <main className="flex-grow"> {/* Changed flex-1 to flex-grow for clarity */}
+      <main className="flex-grow">
         {/* Hero Section */}
         <section id="hero" className="min-h-screen flex flex-col justify-center items-center text-center relative overflow-hidden p-4 bg-gradient-to-b from-background via-background/90 to-background/80">
           <video
@@ -87,10 +126,8 @@ export default function HomePage() {
             className="absolute inset-0 z-0 w-full h-full object-cover opacity-30 video-no-controls"
           >
             <source src="/avocat.mp4" type="video/mp4" style={{ objectFit: 'cover', pointerEvents: 'none' }} />
-            {/* Add other source types if available for broader browser support */}
             Your browser does not support the video tag.
-
-          </video> {/* Correctly closed the video tag */}
+          </video>
         
           <div className="relative z-10 animate-fade-in-down">
             <h1 className="text-5xl md:text-7xl font-orbitron font-bold tracking-tight mb-4">
@@ -212,12 +249,55 @@ export default function HomePage() {
                 </Card>
               ))}
             </div>
-             {/* Placeholder for chatbot UI */}
-            <div id="chatbot-placeholder" className="mt-12 p-6 bg-card border border-border/70 rounded-lg text-center">
-              <Bot className="h-12 w-12 text-primary mx-auto mb-4" />
-              <h3 className="text-xl font-orbitron mb-2">Assistant Juridique IA</h3>
-              <p className="text-muted-foreground">L'interface du chatbot sera intégrée ici.</p>
-              <Input type="text" placeholder="Posez votre question..." className="mt-4 max-w-md mx-auto bg-input border-border focus:border-primary" />
+            
+            {/* Chatbot Interface */}
+            <div id="chatbot-interface" className="mt-12 p-6 bg-card border border-border/70 rounded-lg shadow-xl">
+              <div className="flex items-center mb-6">
+                <Bot className="h-10 w-10 text-primary mr-4 shrink-0" />
+                <h3 className="text-3xl font-orbitron text-primary">Assistant Juridique IA</h3>
+              </div>
+              <div className="space-y-4 h-80 overflow-y-auto p-4 border border-border/50 rounded-md mb-6 bg-background/70 custom-scrollbar">
+                {messages.length === 0 && !isLoading && (
+                  <div className="flex justify-center items-center h-full">
+                    <p className="text-muted-foreground italic">Posez votre question pour commencer...</p>
+                  </div>
+                )}
+                {messages.map((msg, index) => (
+                  <div key={index} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}>
+                    <div className={`max-w-[80%] p-3 rounded-lg shadow ${msg.sender === 'user' ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-secondary text-secondary-foreground rounded-bl-none'}`}>
+                      <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
+                    </div>
+                     <p className={`text-xs mt-1 ${msg.sender === 'user' ? 'text-right' : 'text-left'} text-muted-foreground/70`}>
+                        {msg.sender === 'user' ? 'Vous' : 'Assistant IA'}
+                      </p>
+                  </div>
+                ))}
+                {isLoading && (
+                  <div className="flex items-start">
+                     <div className="max-w-[80%] p-3 rounded-lg shadow bg-secondary text-secondary-foreground rounded-bl-none">
+                      <p className="text-sm italic">L'assistant IA est en train d'écrire...</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <form onSubmit={handleSendMessage} className="flex gap-3 items-center">
+                <Input
+                  type="text"
+                  value={currentMessage}
+                  onChange={(e) => setCurrentMessage(e.target.value)}
+                  placeholder="Posez votre question juridique ici..."
+                  className="flex-grow bg-input border-border focus:border-primary focus:ring-primary text-base"
+                  disabled={isLoading}
+                  aria-label="Votre question juridique"
+                />
+                <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-2.5 text-base" disabled={isLoading || !currentMessage.trim()}>
+                  Envoyer
+                  <Send className="ml-2 h-5 w-5" />
+                </Button>
+              </form>
+              <p className="text-xs text-muted-foreground mt-3 text-center">
+                Cet assistant IA fournit des informations générales et ne constitue pas un avis juridique. Pour des conseils spécifiques, veuillez consulter Maître Dupont.
+              </p>
             </div>
           </div>
         </section>
@@ -305,6 +385,49 @@ export default function HomePage() {
         </section>
       </main>
       <Footer />
+       <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: hsl(var(--background) / 0.5);
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: hsl(var(--border));
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: hsl(var(--primary) / 0.8);
+        }
+        .video-no-controls::-webkit-media-controls {
+          display: none !important;
+        }
+        .video-no-controls::-webkit-media-controls-enclosure {
+          display: none !important;
+        }
+        .video-no-controls::-webkit-media-controls-panel {
+          display: none !important;
+        }
+        .video-no-controls::-webkit-media-controls-play-button {
+          display: none !important;
+        }
+        .video-no-controls::-webkit-media-controls-timeline {
+          display: none !important;
+        }
+        .video-no-controls::-webkit-media-controls-current-time-display {
+          display: none !important;
+        }
+        .video-no-controls::-webkit-media-controls-time-remaining-display {
+          display: none !important;
+        }
+        .video-no-controls::-webkit-media-controls-volume-slider {
+          display: none !important;
+        }
+        .video-no-controls::-webkit-media-controls-fullscreen-button {
+          display: none !important;
+        }
+      `}</style>
     </div>
   );
 }
