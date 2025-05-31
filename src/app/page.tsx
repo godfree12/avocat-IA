@@ -104,6 +104,9 @@ export default function HomePage() {
   const [pdfAnalysisError, setPdfAnalysisError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Chatbot Modal State
+  const [isChatbotModalOpen, setIsChatbotModalOpen] = useState(false);
+
 
   const aiTools = [
     {
@@ -111,7 +114,7 @@ export default function HomePage() {
       title: 'Assistant Juridique IA',
       description: 'Posez vos questions juridiques de base et obtenez des réponses instantanées 24/7.',
       actionText: 'Dialoguer avec l\'IA',
-      href: '#chatbot-interface',
+      onClickAction: () => setIsChatbotModalOpen(true),
     },
     {
       icon: UploadCloud,
@@ -289,6 +292,12 @@ export default function HomePage() {
     }
   };
 
+  const handleChatbotModalOpenChange = (open: boolean) => {
+    setIsChatbotModalOpen(open);
+    // Optionally, you might want to clear messages or do other cleanup here,
+    // but for now, we'll keep the message history persistent during the session.
+  };
+
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
@@ -325,7 +334,7 @@ export default function HomePage() {
               </Button>
               <Button size="lg" variant="outline" className="border-primary text-primary hover:bg-primary/10 group shadow-md hover:shadow-primary/30 transition-shadow duration-300" asChild>
                  <Link href="#outils-ia">
-                  Accéder à l'assistant IA
+                  Accéder aux outils IA
                   <Zap className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
@@ -438,57 +447,71 @@ export default function HomePage() {
                 </Card>
               ))}
             </div>
-            
-            <div id="chatbot-interface" className="mt-12 p-6 bg-card border border-border/70 rounded-lg shadow-xl">
-              <div className="flex items-center mb-6">
-                <Bot className="h-10 w-10 text-primary mr-4 shrink-0" />
-                <h3 className="text-3xl font-orbitron text-primary">Assistant Juridique IA</h3>
-              </div>
-              <div className="space-y-4 h-80 overflow-y-auto p-4 border border-border/50 rounded-md mb-6 bg-background/70 custom-scrollbar">
-                {messages.length === 0 && !isLoadingChat && (
-                  <div className="flex justify-center items-center h-full">
-                    <p className="text-muted-foreground italic">Posez votre question pour commencer...</p>
-                  </div>
-                )}
-                {messages.map((msg, index) => (
-                  <div key={index} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}>
-                    <div className={`max-w-[80%] p-3 rounded-lg shadow ${msg.sender === 'user' ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-secondary text-secondary-foreground rounded-bl-none'}`}>
-                      <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
-                    </div>
-                     <p className={`text-xs mt-1 ${msg.sender === 'user' ? 'text-right' : 'text-left'} text-muted-foreground/70`}>
-                        {msg.sender === 'user' ? 'Vous' : 'Assistant IA'}
-                      </p>
-                  </div>
-                ))}
-                {isLoadingChat && (
-                  <div className="flex items-start">
-                     <div className="max-w-[80%] p-3 rounded-lg shadow bg-secondary text-secondary-foreground rounded-bl-none">
-                      <p className="text-sm italic">L'assistant IA est en train d'écrire...</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-              <form onSubmit={handleSendMessage} className="flex gap-3 items-center">
-                <Input
-                  type="text"
-                  value={currentMessage}
-                  onChange={(e) => setCurrentMessage(e.target.value)}
-                  placeholder="Posez votre question juridique ici..."
-                  className="flex-grow bg-input border-border focus:border-primary focus:ring-primary text-base"
-                  disabled={isLoadingChat}
-                  aria-label="Votre question juridique"
-                />
-                <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-2.5 text-base" disabled={isLoadingChat || !currentMessage.trim()}>
-                  Envoyer
-                  <Send className="ml-2 h-5 w-5" />
-                </Button>
-              </form>
-              <p className="text-xs text-muted-foreground mt-3 text-center">
-                Cet assistant IA fournit des informations générales et ne constitue pas un avis juridique. Pour des conseils spécifiques, veuillez consulter Maître Dupont.
-              </p>
-            </div>
           </div>
         </section>
+
+        {/* Chatbot Modal */}
+        <Dialog open={isChatbotModalOpen} onOpenChange={handleChatbotModalOpenChange}>
+          <DialogContent className="sm:max-w-[600px] bg-card text-card-foreground border-border/70 flex flex-col h-[70vh] max-h-[700px]">
+            <DialogHeader>
+              <div className="flex items-center mb-2">
+                <Bot className="h-8 w-8 text-primary mr-3 shrink-0" />
+                <DialogTitle className="text-2xl font-orbitron text-primary">Assistant Juridique IA</DialogTitle>
+              </div>
+              <DialogDescription className="text-muted-foreground">
+                Posez vos questions juridiques de base. Cet assistant fournit des informations générales et non un avis juridique.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="flex-grow space-y-4 overflow-y-auto p-4 border border-border/50 rounded-md bg-background/70 custom-scrollbar">
+              {messages.length === 0 && !isLoadingChat && (
+                <div className="flex justify-center items-center h-full">
+                  <p className="text-muted-foreground italic">Posez votre question pour commencer...</p>
+                </div>
+              )}
+              {messages.map((msg, index) => (
+                <div key={index} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}>
+                  <div className={`max-w-[80%] p-3 rounded-lg shadow ${msg.sender === 'user' ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-secondary text-secondary-foreground rounded-bl-none'}`}>
+                    <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
+                  </div>
+                    <p className={`text-xs mt-1 ${msg.sender === 'user' ? 'text-right' : 'text-left'} text-muted-foreground/70`}>
+                      {msg.sender === 'user' ? 'Vous' : 'Assistant IA'}
+                    </p>
+                </div>
+              ))}
+              {isLoadingChat && (
+                <div className="flex items-start">
+                    <div className="max-w-[80%] p-3 rounded-lg shadow bg-secondary text-secondary-foreground rounded-bl-none">
+                    <p className="text-sm italic">L'assistant IA est en train d'écrire...</p>
+                  </div>
+                </div>
+              )}
+            </div>
+            <form onSubmit={handleSendMessage} className="flex gap-3 items-center pt-4 border-t border-border/50">
+              <Input
+                type="text"
+                value={currentMessage}
+                onChange={(e) => setCurrentMessage(e.target.value)}
+                placeholder="Posez votre question juridique ici..."
+                className="flex-grow bg-input border-border focus:border-primary focus:ring-primary text-base"
+                disabled={isLoadingChat}
+                aria-label="Votre question juridique"
+              />
+              <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-2.5 text-base" disabled={isLoadingChat || !currentMessage.trim()}>
+                Envoyer
+                <Send className="ml-2 h-5 w-5" />
+              </Button>
+            </form>
+             <DialogFooter className="mt-2 sm:justify-start">
+              <DialogClose asChild>
+                <Button type="button" variant="outline">
+                  Fermer
+                </Button>
+              </DialogClose>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
 
         {/* Case Pre-evaluation Modal */}
         <Dialog open={isCaseEvaluationModalOpen} onOpenChange={handleCaseEvaluationModalOpenChange}>
