@@ -3,7 +3,8 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState, type FormEvent } from 'react'; // Added useState and FormEvent
+import { useState, type FormEvent, useEffect, useRef } from 'react';
+import { useFormState, useFormStatus } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -12,9 +13,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Footer } from '@/components/layout/footer';
 import { 
   ChevronRight, User, Briefcase, Zap, Mail, Linkedin, MessageCircle, Scale, Users, Home, Globe2, 
-  Bot, FileText, CheckCircle, CalendarDays, UploadCloud, Send // Added Send icon
+  Bot, FileText, CheckCircle, CalendarDays, UploadCloud, Send
 } from 'lucide-react';
-import { legalChat } from '@/ai/flows/legal-chat-flow'; // Imported the flow
+import { legalChat } from '@/ai/flows/legal-chat-flow';
+import { sendContactMessage, type ContactFormState } from '@/app/actions';
+import { useToast } from "@/hooks/use-toast";
 
 const expertiseAreas = [
   {
@@ -55,21 +58,21 @@ const aiTools = [
     title: 'Assistant Juridique IA',
     description: 'Posez vos questions juridiques de base et obtenez des réponses instantanées 24/7.',
     actionText: 'Dialoguer avec l\'IA',
-    href: '#chatbot-interface', // Updated link to point to the chat interface
+    href: '#chatbot-interface',
   },
   {
     icon: UploadCloud,
     title: 'Analyseur de Documents PDF',
     description: 'Glissez-déposez un contrat ou document PDF pour un résumé automatique et une détection des points sensibles.',
     actionText: 'Analyser un document',
-    href: '#document-analyzer-placeholder', // This would be another page or modal
+    href: '#document-analyzer-placeholder',
   },
   {
     icon: FileText,
     title: 'Pré-évaluation de Cas IA',
     description: 'Remplissez un court formulaire pour une estimation par IA des chances de succès de votre dossier.',
     actionText: 'Évaluer mon cas',
-    href: '#case-evaluation-placeholder', // This would be another page or modal
+    href: '#case-evaluation-placeholder',
   },
   {
     icon: CalendarDays,
@@ -86,10 +89,48 @@ interface ChatMessage {
   text: string;
 }
 
+const initialContactFormState: ContactFormState = {
+  message: null,
+  errors: {},
+  status: null,
+};
+
+function SubmitContactButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-primary/50" disabled={pending}>
+      {pending ? "Envoi en cours..." : "Envoyer le Message"}
+      <Mail className="ml-2 h-5 w-5" />
+    </Button>
+  );
+}
+
 export default function HomePage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentMessage, setCurrentMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  const { toast } = useToast();
+  const [contactFormState, contactFormAction] = useFormState(sendContactMessage, initialContactFormState);
+  const contactFormRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (contactFormState.status === 'success' && contactFormState.message) {
+      toast({
+        title: "Succès!",
+        description: contactFormState.message,
+      });
+      contactFormRef.current?.reset();
+    } else if (contactFormState.status === 'error' && contactFormState.message) {
+      let description = contactFormState.message;
+      // Removed detailed error construction from toast to keep it simple, errors are displayed inline
+      toast({
+        title: "Erreur d'envoi",
+        description: description,
+        variant: "destructive",
+      });
+    }
+  }, [contactFormState, toast]);
 
   const handleSendMessage = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -250,7 +291,6 @@ export default function HomePage() {
               ))}
             </div>
             
-            {/* Chatbot Interface */}
             <div id="chatbot-interface" className="mt-12 p-6 bg-card border border-border/70 rounded-lg shadow-xl">
               <div className="flex items-center mb-6">
                 <Bot className="h-10 w-10 text-primary mr-4 shrink-0" />
@@ -319,28 +359,29 @@ export default function HomePage() {
                   <CardTitle className="text-3xl font-orbitron text-center md:text-left">Envoyer un message</CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
-                  <form action="#" method="POST" className="space-y-6">
+                  <form ref={contactFormRef} action={contactFormAction} className="space-y-6">
                     <div>
-                      <label htmlFor="name" className="block text-sm font-medium text-muted-foreground">Nom complet</label>
-                      <Input type="text" name="name" id="name" required className="mt-1 bg-input border-border focus:border-primary focus:ring-primary" />
+                      <label htmlFor="name" className="block text-sm font-medium text-muted-foreground mb-1">Nom complet</label>
+                      <Input type="text" name="name" id="name" required className="bg-input border-border focus:border-primary focus:ring-primary" aria-describedby="name-error" />
+                      {contactFormState.errors?.name && <p id="name-error" className="text-xs text-destructive mt-1">{contactFormState.errors.name.join(', ')}</p>}
                     </div>
                     <div>
-                      <label htmlFor="email" className="block text-sm font-medium text-muted-foreground">Adresse e-mail</label>
-                      <Input type="email" name="email" id="email" required className="mt-1 bg-input border-border focus:border-primary focus:ring-primary" />
+                      <label htmlFor="email" className="block text-sm font-medium text-muted-foreground mb-1">Adresse e-mail</label>
+                      <Input type="email" name="email" id="email" required className="bg-input border-border focus:border-primary focus:ring-primary" aria-describedby="email-error" />
+                      {contactFormState.errors?.email && <p id="email-error" className="text-xs text-destructive mt-1">{contactFormState.errors.email.join(', ')}</p>}
                     </div>
                     <div>
-                      <label htmlFor="subject" className="block text-sm font-medium text-muted-foreground">Objet</label>
-                      <Input type="text" name="subject" id="subject" required className="mt-1 bg-input border-border focus:border-primary focus:ring-primary" />
+                      <label htmlFor="subject" className="block text-sm font-medium text-muted-foreground mb-1">Objet</label>
+                      <Input type="text" name="subject" id="subject" required className="bg-input border-border focus:border-primary focus:ring-primary" aria-describedby="subject-error" />
+                      {contactFormState.errors?.subject && <p id="subject-error" className="text-xs text-destructive mt-1">{contactFormState.errors.subject.join(', ')}</p>}
                     </div>
                     <div>
-                      <label htmlFor="message" className="block text-sm font-medium text-muted-foreground">Votre message</label>
-                      <Textarea name="message" id="message" rows={4} required className="mt-1 bg-input border-border focus:border-primary focus:ring-primary" />
+                      <label htmlFor="message" className="block text-sm font-medium text-muted-foreground mb-1">Votre message</label>
+                      <Textarea name="message" id="message" rows={4} required className="bg-input border-border focus:border-primary focus:ring-primary" aria-describedby="message-error" />
+                      {contactFormState.errors?.message && <p id="message-error" className="text-xs text-destructive mt-1">{contactFormState.errors.message.join(', ')}</p>}
                     </div>
                     <div>
-                      <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-primary/50">
-                        Envoyer le Message
-                        <Mail className="ml-2 h-5 w-5" />
-                      </Button>
+                      <SubmitContactButton />
                     </div>
                   </form>
                 </CardContent>
@@ -431,3 +472,4 @@ export default function HomePage() {
     </div>
   );
 }
+
