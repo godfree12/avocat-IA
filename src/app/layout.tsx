@@ -1,13 +1,14 @@
+
 import type { Metadata } from 'next';
 import { Orbitron, Inter } from 'next/font/google';
 import './globals.css';
-import { SidebarLayout } from '@/components/layout/sidebar-layout';
+import { HeaderNavigationLayout } from '@/components/layout/sidebar-layout'; 
 import { Toaster } from "@/components/ui/toaster";
 
 const orbitronFont = Orbitron({
   subsets: ['latin'],
   variable: '--font-orbitron',
-  weight: ['400', '500', '700', '900'], // Specify needed weights
+  weight: ['400', '500', '700', '900'],
 });
 
 const interFont = Inter({
@@ -27,8 +28,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" className="dark">
-      <body className={`${orbitronFont.variable} ${interFont.variable} font-sans antialiased`}>
-        <SidebarLayout>{children}</SidebarLayout>
+      <body className={`${orbitronFont.variable} ${interFont.variable} font-sans antialiased scroll-smooth`}>
+        <HeaderNavigationLayout>{children}</HeaderNavigationLayout>
         <Toaster />
       </body>
     </html>

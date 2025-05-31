@@ -3,23 +3,10 @@
 
 import type { PropsWithChildren } from 'react';
 import Link from 'next/link';
-import { Home, User, Briefcase, Zap, Mail, Settings, LogOut, BarChart3, MessageCircle } from 'lucide-react';
-import {
-  SidebarProvider,
-  Sidebar,
-  SidebarHeader,
-  SidebarTrigger,
-  SidebarContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarInset,
-  SidebarFooter,
-  useSidebar,
-} from '@/components/ui/sidebar';
+import { Home, User, Briefcase, Zap, Mail, Settings, LogOut, BarChart3, Menu as MenuIcon } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { Logo } from '@/components/icons/logo';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -28,7 +15,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const navItems = [
   { href: '#hero', label: 'Accueil', icon: Home },
@@ -77,76 +65,90 @@ function UserProfileDropdown() {
   );
 }
 
-function MainNav() {
-  const { state, setOpenMobile } = useSidebar();
-  
+export function HeaderNavigationLayout({ children }: PropsWithChildren) {
+  const isMobile = useIsMobile();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   const handleLinkClick = () => {
-    // Close mobile sidebar on link click
-    if (state === 'expanded' && typeof setOpenMobile === 'function') {
-       // Check if it's mobile context based on how sidebar works
-       // This is a bit of a hack, ideally useSidebar would expose isMobile more directly or have a close function
-       const sb = document.querySelector('[data-sidebar="sidebar"][data-mobile="true"]');
-       if (sb) {
-        setOpenMobile(false);
-       }
+    if (isMobile) {
+      setMobileMenuOpen(false);
     }
+    // Smooth scroll for anchor links
+    // This logic might need to be in the Link components themselves if direct click handling is complex here
   };
 
-  return (
-    <nav className="flex flex-col gap-1 px-2">
-      {navItems.map((item) => (
-        <SidebarMenuItem key={item.label}>
-          <Link href={item.href} passHref legacyBehavior>
-            <SidebarMenuButton
-              tooltip={item.label}
-              asChild
-              className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-              onClick={handleLinkClick}
-            >
-              <a>
-                <item.icon className="h-5 w-5" />
-                {state === 'expanded' && <span>{item.label}</span>}
-              </a>
-            </SidebarMenuButton>
-          </Link>
-        </SidebarMenuItem>
-      ))}
-    </nav>
-  );
-}
+  useEffect(() => {
+    if (!isMobile && mobileMenuOpen) {
+      setMobileMenuOpen(false);
+    }
+  }, [isMobile, mobileMenuOpen]);
 
-export function SidebarLayout({ children }: PropsWithChildren) {
   return (
-    <SidebarProvider defaultOpen>
-      <Sidebar collapsible="icon" side="left" variant="sidebar" className="border-r border-sidebar-border">
-        <SidebarHeader className="p-4 flex items-center justify-between">
-          <Link href="#hero" className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center">
-             <Logo className="h-8 w-8 text-primary" />
-             <h1 className="text-xl font-orbitron font-bold tracking-tight group-data-[collapsible=icon]:hidden text-foreground">
-                Jean Dupont
+    <div className="min-h-screen flex flex-col bg-background text-foreground">
+      <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+          <Link href="#hero" className="flex items-center gap-2 group" onClick={handleLinkClick}>
+            <Logo className="h-8 w-8 text-primary transition-transform group-hover:scale-110" />
+            <h1 className="text-xl font-orbitron font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">
+              Jean Dupont
             </h1>
           </Link>
-          <SidebarTrigger className="group-data-[collapsible=icon]:hidden" />
-        </SidebarHeader>
-        <Separator className="bg-sidebar-border" />
-        <SidebarContent>
-          <SidebarMenu>
-            <MainNav />
-          </SidebarMenu>
-        </SidebarContent>
-        <Separator className="bg-sidebar-border"/>
-        <SidebarFooter className="p-4 flex items-center justify-between group-data-[collapsible=icon]:justify-center">
-           <div className="group-data-[collapsible=icon]:hidden">
-            <UserProfileDropdown />
-           </div>
-           <div className="group-data-[collapsible=icon]:block hidden">
-            <UserProfileDropdown /> {/* Ensure it's visible in collapsed icon mode too */}
-           </div>
-        </SidebarFooter>
-      </Sidebar>
-      <SidebarInset className="flex flex-col min-h-screen">
-        <main className="flex-1">{children}</main>
-      </SidebarInset>
-    </SidebarProvider>
+
+          <nav className="hidden md:flex items-center gap-1">
+            {navItems.map((item) => (
+              <Link key={item.label} href={item.href} passHref legacyBehavior>
+                <a
+                  onClick={handleLinkClick}
+                  className="px-3 py-2 rounded-md text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                >
+                  {item.label}
+                </a>
+              </Link>
+            ))}
+          </nav>
+
+          <div className="flex items-center gap-2">
+            <div className="hidden md:block">
+              <UserProfileDropdown />
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden text-foreground hover:bg-accent hover:text-accent-foreground"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Ouvrir le menu"
+            >
+              <MenuIcon className="h-6 w-6" />
+            </Button>
+          </div>
+        </div>
+
+        {isMobile && mobileMenuOpen && (
+          <div className="md:hidden border-t border-border bg-background shadow-lg">
+            <nav className="flex flex-col gap-1 px-4 py-4">
+              {navItems.map((item) => (
+                <Link key={item.label} href={item.href} passHref legacyBehavior>
+                  <a
+                    onClick={handleLinkClick}
+                    className="flex items-center px-3 py-3 rounded-md text-base font-medium text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                  >
+                    <item.icon className="h-5 w-5 mr-3 text-primary" />
+                    {item.label}
+                  </a>
+                </Link>
+              ))}
+               <div className="mt-4 border-t border-border pt-4">
+                <UserProfileDropdown />
+               </div>
+            </nav>
+          </div>
+        )}
+      </header>
+
+      <main className="flex-1">
+        {/* The container and padding for main content are now handled by individual page sections or page.tsx itself */}
+        {children}
+      </main>
+    </div>
   );
 }
