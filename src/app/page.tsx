@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Footer } from '@/components/layout/footer';
 import { 
   ChevronRight, User, Briefcase, Zap, Mail, Linkedin, MessageCircle, Scale, Users, Home, Globe2, 
-  Bot, FileText, CheckCircle, CalendarDays, UploadCloud, Send
+  Bot, FileText, CalendarDays, UploadCloud, Send
 } from 'lucide-react';
 import { legalChat } from '@/ai/flows/legal-chat-flow';
 import { preEvaluateCase } from '@/ai/flows/case-pre-evaluation-flow';
@@ -21,6 +21,7 @@ import { sendContactMessage, type ContactFormState } from '@/app/actions';
 import { useToast } from "@/hooks/use-toast";
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 
 
 const expertiseAreas = [
@@ -56,37 +57,6 @@ const expertiseAreas = [
   },
 ];
 
-const aiTools = [
-  {
-    icon: Bot,
-    title: 'Assistant Juridique IA',
-    description: 'Posez vos questions juridiques de base et obtenez des réponses instantanées 24/7.',
-    actionText: 'Dialoguer avec l\'IA',
-    href: '#chatbot-interface',
-  },
-  {
-    icon: UploadCloud,
-    title: 'Analyseur de Documents PDF',
-    description: 'Glissez-déposez un contrat ou document PDF pour un résumé automatique et une détection des points sensibles.',
-    actionText: 'Analyser un document',
-    href: '#document-analyzer-placeholder', 
-  },
-  {
-    icon: FileText,
-    title: 'Pré-évaluation de Cas IA',
-    description: 'Remplissez un court formulaire pour une estimation par IA des chances de succès de votre dossier.',
-    actionText: 'Évaluer mon cas',
-    href: '#case-evaluation-form', // Updated href
-  },
-  {
-    icon: CalendarDays,
-    title: 'Prise de RDV Intelligente',
-    description: 'Notre agenda IA vous aide à trouver le créneau parfait selon l\'urgence et le domaine de votre affaire.',
-    actionText: 'Prendre RDV',
-    href: 'https://calendly.com',
-    external: true,
-  }
-];
 
 interface ChatMessage {
   sender: 'user' | 'ai';
@@ -122,7 +92,39 @@ export default function HomePage() {
   const [caseEvaluationResult, setCaseEvaluationResult] = useState<string | null>(null);
   const [isEvaluatingCase, setIsEvaluatingCase] = useState(false);
   const [caseEvaluationError, setCaseEvaluationError] = useState<string | null>(null);
+  const [isCaseEvaluationModalOpen, setIsCaseEvaluationModalOpen] = useState(false);
 
+  const aiTools = [
+    {
+      icon: Bot,
+      title: 'Assistant Juridique IA',
+      description: 'Posez vos questions juridiques de base et obtenez des réponses instantanées 24/7.',
+      actionText: 'Dialoguer avec l\'IA',
+      href: '#chatbot-interface',
+    },
+    {
+      icon: UploadCloud,
+      title: 'Analyseur de Documents PDF',
+      description: 'Glissez-déposez un contrat ou document PDF pour un résumé automatique et une détection des points sensibles.',
+      actionText: 'Analyser un document',
+      href: '#document-analyzer-placeholder', 
+    },
+    {
+      icon: FileText,
+      title: 'Pré-évaluation de Cas IA',
+      description: 'Remplissez un court formulaire pour une estimation par IA des chances de succès de votre dossier.',
+      actionText: 'Évaluer mon cas',
+      onClickAction: () => setIsCaseEvaluationModalOpen(true),
+    },
+    {
+      icon: CalendarDays,
+      title: 'Prise de RDV Intelligente',
+      description: 'Notre agenda IA vous aide à trouver le créneau parfait selon l\'urgence et le domaine de votre affaire.',
+      actionText: 'Prendre RDV',
+      href: 'https://calendly.com',
+      external: true,
+    }
+  ];
 
   useEffect(() => {
     if (!contactFormState) return; 
@@ -167,7 +169,7 @@ export default function HomePage() {
     }
   };
 
-  const handleCasePreEvaluation = async (event: FormEvent<HTMLFormElement>) => {
+  const handleCasePreEvaluationSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!caseEvaluationInput.caseType || caseEvaluationInput.caseDescription.length < 50 || isEvaluatingCase) {
       setCaseEvaluationError("Veuillez sélectionner un type d'affaire et fournir une description d'au moins 50 caractères.");
@@ -194,6 +196,17 @@ export default function HomePage() {
       setCaseEvaluationResult(null);
     } finally {
       setIsEvaluatingCase(false);
+    }
+  };
+
+  const handleCaseEvaluationModalOpenChange = (open: boolean) => {
+    setIsCaseEvaluationModalOpen(open);
+    if (!open) {
+      // Reset results when modal is closed
+      setCaseEvaluationResult(null);
+      setCaseEvaluationError(null);
+      // Optionally reset form fields too, or keep them if user might reopen to continue
+      // setCaseEvaluationInput({ caseType: '', caseDescription: '' }); 
     }
   };
 
@@ -324,11 +337,23 @@ export default function HomePage() {
                     <CardDescription className="text-muted-foreground mb-6">{tool.description}</CardDescription>
                   </CardContent>
                   <div className="p-6 pt-0">
-                    <Button variant="outline" className="w-full border-primary text-primary hover:bg-primary/10" asChild>
-                      <Link href={tool.href} target={tool.external ? "_blank" : "_self"} rel={tool.external ? "noopener noreferrer" : ""}>
-                        {tool.actionText}
-                        <ChevronRight className="ml-2 h-4 w-4" />
-                      </Link>
+                    <Button 
+                      variant="outline" 
+                      className="w-full border-primary text-primary hover:bg-primary/10" 
+                      onClick={tool.onClickAction ? tool.onClickAction : undefined}
+                      asChild={!tool.onClickAction && !!tool.href}
+                    >
+                      {tool.href && !tool.onClickAction ? (
+                        <Link href={tool.href} target={tool.external ? "_blank" : "_self"} rel={tool.external ? "noopener noreferrer" : ""}>
+                          {tool.actionText}
+                          <ChevronRight className="ml-2 h-4 w-4" />
+                        </Link>
+                      ) : (
+                        <>
+                          {tool.actionText}
+                          <ChevronRight className="ml-2 h-4 w-4" />
+                        </>
+                      )}
                     </Button>
                   </div>
                 </Card>
@@ -383,76 +408,78 @@ export default function HomePage() {
                 Cet assistant IA fournit des informations générales et ne constitue pas un avis juridique. Pour des conseils spécifiques, veuillez consulter Maître Dupont.
               </p>
             </div>
-
-            {/* Case Pre-evaluation Form Section */}
-            <div id="case-evaluation-form" className="mt-12">
-              <Card className="bg-card text-card-foreground border-border/70 rounded-lg shadow-xl p-6 md:p-8">
-                <CardHeader className="p-0 mb-6">
-                  <div className="flex items-center mb-2">
-                    <FileText className="h-10 w-10 text-primary mr-4 shrink-0" />
-                    <CardTitle className="text-3xl font-orbitron text-primary">Pré-évaluation de Cas IA</CardTitle>
-                  </div>
-                  <CardDescription className="text-muted-foreground">
-                    Remplissez ce formulaire pour obtenir une pré-évaluation automatisée de votre situation par notre IA. Cela ne remplace pas une consultation.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <form onSubmit={handleCasePreEvaluation} className="space-y-6">
-                    <div>
-                      <Label htmlFor="caseType" className="block text-sm font-medium text-muted-foreground mb-1">Type d'affaire</Label>
-                      <Select
-                        name="caseType"
-                        value={caseEvaluationInput.caseType}
-                        onValueChange={(value) => setCaseEvaluationInput(prev => ({ ...prev, caseType: value }))}
-                        required
-                      >
-                        <SelectTrigger className="w-full bg-input border-border focus:border-primary focus:ring-primary">
-                          <SelectValue placeholder="Sélectionnez un type d'affaire" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-popover border-border">
-                          {expertiseAreas.map(area => (
-                            <SelectItem key={area.title} value={area.title}>
-                              {area.title}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="caseDescription" className="block text-sm font-medium text-muted-foreground mb-1">Description de votre situation (minimum 50 caractères)</Label>
-                      <Textarea
-                        name="caseDescription"
-                        id="caseDescription"
-                        rows={5}
-                        value={caseEvaluationInput.caseDescription}
-                        onChange={(e) => setCaseEvaluationInput(prev => ({ ...prev, caseDescription: e.target.value }))}
-                        required
-                        minLength={50}
-                        className="bg-input border-border focus:border-primary focus:ring-primary"
-                        placeholder="Décrivez en détail votre problème juridique, les faits importants, et ce que vous souhaitez obtenir."
-                      />
-                    </div>
-                    {caseEvaluationError && (
-                      <p className="text-sm text-destructive">{caseEvaluationError}</p>
-                    )}
-                    <div>
-                      <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-primary/50" disabled={isEvaluatingCase || !caseEvaluationInput.caseType || caseEvaluationInput.caseDescription.length < 50}>
-                        {isEvaluatingCase ? "Évaluation en cours..." : "Obtenir une Pré-évaluation IA"}
-                        <Zap className="ml-2 h-5 w-5" />
-                      </Button>
-                    </div>
-                  </form>
-                  {caseEvaluationResult && (
-                    <div className="mt-8 p-6 bg-secondary/50 border border-border/50 rounded-lg">
-                      <h4 className="text-xl font-orbitron text-primary mb-3">Résultat de la Pré-évaluation IA :</h4>
-                      <p className="text-muted-foreground whitespace-pre-wrap">{caseEvaluationResult}</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
           </div>
         </section>
+
+        <Dialog open={isCaseEvaluationModalOpen} onOpenChange={handleCaseEvaluationModalOpenChange}>
+          <DialogContent className="sm:max-w-[600px] bg-card text-card-foreground border-border/70">
+            <DialogHeader>
+              <div className="flex items-center mb-2">
+                <FileText className="h-8 w-8 text-primary mr-3 shrink-0" />
+                <DialogTitle className="text-2xl font-orbitron text-primary">Pré-évaluation de Cas IA</DialogTitle>
+              </div>
+              <DialogDescription className="text-muted-foreground">
+                Remplissez ce formulaire pour obtenir une pré-évaluation automatisée de votre situation par notre IA. Cela ne remplace pas une consultation.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <form onSubmit={handleCasePreEvaluationSubmit} className="space-y-6 py-4">
+              <div>
+                <Label htmlFor="modalCaseType" className="block text-sm font-medium text-muted-foreground mb-1">Type d'affaire</Label>
+                <Select
+                  name="caseType"
+                  value={caseEvaluationInput.caseType}
+                  onValueChange={(value) => setCaseEvaluationInput(prev => ({ ...prev, caseType: value }))}
+                  required
+                >
+                  <SelectTrigger id="modalCaseType" className="w-full bg-input border-border focus:border-primary focus:ring-primary">
+                    <SelectValue placeholder="Sélectionnez un type d'affaire" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border-border">
+                    {expertiseAreas.map(area => (
+                      <SelectItem key={area.title} value={area.title}>
+                        {area.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="modalCaseDescription" className="block text-sm font-medium text-muted-foreground mb-1">Description de votre situation (minimum 50 caractères)</Label>
+                <Textarea
+                  name="caseDescription"
+                  id="modalCaseDescription"
+                  rows={5}
+                  value={caseEvaluationInput.caseDescription}
+                  onChange={(e) => setCaseEvaluationInput(prev => ({ ...prev, caseDescription: e.target.value }))}
+                  required
+                  minLength={50}
+                  className="bg-input border-border focus:border-primary focus:ring-primary"
+                  placeholder="Décrivez en détail votre problème juridique, les faits importants, et ce que vous souhaitez obtenir."
+                />
+              </div>
+              {caseEvaluationError && (
+                <p className="text-sm text-destructive">{caseEvaluationError}</p>
+              )}
+              <div>
+                <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-primary/50" disabled={isEvaluatingCase || !caseEvaluationInput.caseType || caseEvaluationInput.caseDescription.length < 50}>
+                  {isEvaluatingCase ? "Évaluation en cours..." : "Obtenir une Pré-évaluation IA"}
+                  <Zap className="ml-2 h-5 w-5" />
+                </Button>
+              </div>
+            </form>
+
+            {caseEvaluationResult && (
+              <div className="mt-6 p-4 bg-secondary/50 border border-border/50 rounded-lg">
+                <h4 className="text-lg font-orbitron text-primary mb-2">Résultat de la Pré-évaluation IA :</h4>
+                <p className="text-muted-foreground whitespace-pre-wrap">{caseEvaluationResult}</p>
+              </div>
+            )}
+            <DialogFooter className="mt-2">
+              <Button variant="outline" onClick={() => handleCaseEvaluationModalOpenChange(false)}>Fermer</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <Separator className="my-16 md:my-24 bg-border/50" />
 
