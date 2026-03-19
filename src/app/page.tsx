@@ -1,4 +1,3 @@
-
 "use client";
 
 import Image from 'next/image';
@@ -11,19 +10,21 @@ import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Footer } from '@/components/layout/footer';
-import { 
-  ChevronRight, User, Briefcase, Zap, Mail, Linkedin, MessageCircle, Scale, Users, Home, Globe2, 
+import {
+  ChevronRight, Briefcase, Zap, Mail, Linkedin, MessageCircle, Scale, Users, Home, Globe2,
   Bot, FileText, CalendarDays, UploadCloud, Send, FileScan
 } from 'lucide-react';
-import { legalChat, type LegalChatOutput } from '@/ai/flows/legal-chat-flow';
-import { preEvaluateCase, type CasePreEvaluationOutput } from '@/ai/flows/case-pre-evaluation-flow';
-import { analyzeDocument, type DocumentAnalysisOutput } from '@/ai/flows/document-analyzer-flow';
-import { sendContactMessage, type ContactFormState } from '@/app/actions';
+import {
+  sendContactMessage,
+  type ContactFormState,
+  runLegalChat,
+  runCasePreEvaluation,
+  runDocumentAnalysis,
+} from '@/app/actions';
 import { useToast } from "@/hooks/use-toast";
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
-
 
 const expertiseAreas = [
   {
@@ -58,11 +59,16 @@ const expertiseAreas = [
   },
 ];
 
-
 interface ChatMessage {
   sender: 'user' | 'ai';
   text: string;
 }
+
+type DocumentAnalysisResult = {
+  summary: string;
+  sensitivePoints: string[];
+  disclaimer: string;
+};
 
 const initialContactFormState: ContactFormState = {
   message: null,
@@ -72,8 +78,13 @@ const initialContactFormState: ContactFormState = {
 
 function SubmitContactButton() {
   const { pending } = useFormStatus();
+
   return (
-    <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-primary/50" disabled={pending}>
+    <Button
+      type="submit"
+      className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-primary/50"
+      disabled={pending}
+    >
       {pending ? "Envoi en cours..." : "Envoyer le Message"}
       <Mail className="ml-2 h-5 w-5" />
     </Button>
@@ -89,24 +100,23 @@ export default function HomePage() {
   const [contactFormState, contactFormAction] = useActionState(sendContactMessage, initialContactFormState);
   const contactFormRef = useRef<HTMLFormElement>(null);
 
-  // Case Pre-evaluation Modal State
-  const [caseEvaluationInput, setCaseEvaluationInput] = useState({ caseType: '', caseDescription: '' });
+  const [caseEvaluationInput, setCaseEvaluationInput] = useState({
+    caseType: '',
+    caseDescription: '',
+  });
   const [caseEvaluationResult, setCaseEvaluationResult] = useState<string | null>(null);
   const [isEvaluatingCase, setIsEvaluatingCase] = useState(false);
   const [caseEvaluationError, setCaseEvaluationError] = useState<string | null>(null);
   const [isCaseEvaluationModalOpen, setIsCaseEvaluationModalOpen] = useState(false);
 
-  // Document Analysis Modal State
   const [isDocumentAnalysisModalOpen, setIsDocumentAnalysisModalOpen] = useState(false);
   const [selectedPdfFile, setSelectedPdfFile] = useState<File | null>(null);
-  const [pdfAnalysisResult, setPdfAnalysisResult] = useState<DocumentAnalysisOutput | null>(null);
+  const [pdfAnalysisResult, setPdfAnalysisResult] = useState<DocumentAnalysisResult | null>(null);
   const [isAnalyzingDocument, setIsAnalyzingDocument] = useState(false);
   const [pdfAnalysisError, setPdfAnalysisError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Chatbot Modal State
   const [isChatbotModalOpen, setIsChatbotModalOpen] = useState(false);
-
 
   const aiTools = [
     {
@@ -135,13 +145,13 @@ export default function HomePage() {
       title: 'Prise de RDV Intelligente',
       description: 'Notre agenda IA vous aide à trouver le créneau parfait selon l\'urgence et le domaine de votre affaire.',
       actionText: 'Prendre RDV',
-      href: 'https://calendly.com', // Replace with actual Calendly link
+      href: 'https://calendly.com',
       external: true,
     }
   ];
 
   useEffect(() => {
-    if (!contactFormState) return; 
+    if (!contactFormState) return;
 
     if (contactFormState.status === 'success' && contactFormState.message) {
       toast({
@@ -152,10 +162,9 @@ export default function HomePage() {
         contactFormRef.current.reset();
       }
     } else if (contactFormState.status === 'error' && contactFormState.message) {
-      let description = contactFormState.message;
       toast({
         title: "Erreur d'envoi",
-        description: description,
+        description: contactFormState.message,
         variant: "destructive",
       });
     }
@@ -171,12 +180,15 @@ export default function HomePage() {
     setIsLoadingChat(true);
 
     try {
-      const aiResponse = await legalChat({ question: newUserMessage.text });
+      const aiResponse = await runLegalChat(newUserMessage.text);
       const newAiMessage: ChatMessage = { sender: 'ai', text: aiResponse.answer };
       setMessages(prev => [...prev, newAiMessage]);
     } catch (error) {
-      console.error("Error calling legalChat flow:", error);
-      const errorMessage: ChatMessage = { sender: 'ai', text: "Désolé, une erreur s'est produite. Veuillez réessayer." };
+      console.error("Error calling runLegalChat:", error);
+      const errorMessage: ChatMessage = {
+        sender: 'ai',
+        text: "Désolé, une erreur s'est produite. Veuillez réessayer.",
+      };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoadingChat(false);
@@ -185,6 +197,7 @@ export default function HomePage() {
 
   const handleCasePreEvaluationSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
     if (!caseEvaluationInput.caseType || caseEvaluationInput.caseDescription.length < 50 || isEvaluatingCase) {
       setCaseEvaluationError("Veuillez sélectionner un type d'affaire et fournir une description d'au moins 50 caractères.");
       return;
@@ -195,15 +208,20 @@ export default function HomePage() {
     setCaseEvaluationError(null);
 
     try {
-      const result = await preEvaluateCase({
+      const result = await runCasePreEvaluation({
         caseType: caseEvaluationInput.caseType,
         caseDescription: caseEvaluationInput.caseDescription,
       });
       setCaseEvaluationResult(result.evaluation);
     } catch (error: any) {
-      console.error("Error calling casePreEvaluationFlow:", error);
-      if (error.details && Array.isArray(error.details) && error.details[0]?.code === 'INVALID_ARGUMENT' && error.details[0]?.message) {
-         setCaseEvaluationError(`Erreur de validation : ${error.details[0].message}. Veuillez vérifier les informations fournies.`);
+      console.error("Error calling runCasePreEvaluation:", error);
+      if (
+        error?.details &&
+        Array.isArray(error.details) &&
+        error.details[0]?.code === 'INVALID_ARGUMENT' &&
+        error.details[0]?.message
+      ) {
+        setCaseEvaluationError(`Erreur de validation : ${error.details[0].message}. Veuillez vérifier les informations fournies.`);
       } else {
         setCaseEvaluationError("Désolé, une erreur s'est produite lors de la pré-évaluation. Veuillez réessayer.");
       }
@@ -227,11 +245,11 @@ export default function HomePage() {
       const file = event.target.files[0];
       if (file.type === "application/pdf") {
         setSelectedPdfFile(file);
-        setPdfAnalysisError(null); // Clear previous error if any
+        setPdfAnalysisError(null);
       } else {
         setSelectedPdfFile(null);
         setPdfAnalysisError("Format de fichier invalide. Veuillez sélectionner un fichier PDF.");
-        if(fileInputRef.current) fileInputRef.current.value = ""; // Reset file input
+        if (fileInputRef.current) fileInputRef.current.value = "";
       }
     } else {
       setSelectedPdfFile(null);
@@ -240,6 +258,7 @@ export default function HomePage() {
 
   const handleDocumentAnalysisSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
     if (!selectedPdfFile || isAnalyzingDocument) {
       setPdfAnalysisError("Veuillez sélectionner un fichier PDF à analyser.");
       return;
@@ -252,22 +271,25 @@ export default function HomePage() {
     try {
       const reader = new FileReader();
       reader.readAsDataURL(selectedPdfFile);
+
       reader.onloadend = async () => {
         const base64data = reader.result as string;
+
         try {
-          const result = await analyzeDocument({
+          const result = await runDocumentAnalysis({
             pdfDataUri: base64data,
             fileName: selectedPdfFile.name,
           });
           setPdfAnalysisResult(result);
         } catch (flowError: any) {
-           console.error("Error calling documentAnalyzerFlow:", flowError);
-           setPdfAnalysisError("Désolé, une erreur s'est produite lors de l'analyse du document. Veuillez réessayer.");
-           setPdfAnalysisResult(null);
+          console.error("Error calling runDocumentAnalysis:", flowError);
+          setPdfAnalysisError("Désolé, une erreur s'est produite lors de l'analyse du document. Veuillez réessayer.");
+          setPdfAnalysisResult(null);
         } finally {
           setIsAnalyzingDocument(false);
         }
       };
+
       reader.onerror = () => {
         console.error("Error reading file for analysis");
         setPdfAnalysisError("Erreur lors de la lecture du fichier. Veuillez réessayer.");
@@ -287,22 +309,18 @@ export default function HomePage() {
       setPdfAnalysisResult(null);
       setPdfAnalysisError(null);
       if (fileInputRef.current) {
-        fileInputRef.current.value = ""; // Reset file input on close
+        fileInputRef.current.value = "";
       }
     }
   };
 
   const handleChatbotModalOpenChange = (open: boolean) => {
     setIsChatbotModalOpen(open);
-    // Optionally, you might want to clear messages or do other cleanup here,
-    // but for now, we'll keep the message history persistent during the session.
   };
-
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <main className="flex-grow">
-        {/* Hero Section */}
         <section id="hero" className="min-h-screen flex flex-col justify-center items-center text-center relative overflow-hidden p-4 bg-gradient-to-b from-background via-background/90 to-background/80">
           <video
             autoPlay
@@ -314,7 +332,7 @@ export default function HomePage() {
             <source src="/avocat.mp4" type="video/mp4" style={{ objectFit: 'cover', pointerEvents: 'none' }} />
             Your browser does not support the video tag.
           </video>
-        
+
           <div className="relative z-10 animate-fade-in-down">
             <h1 className="text-5xl md:text-7xl font-orbitron font-bold tracking-tight mb-4">
               Maître Jean Dupont
@@ -333,7 +351,7 @@ export default function HomePage() {
                 </Link>
               </Button>
               <Button size="lg" variant="outline" className="border-primary text-primary hover:bg-primary/10 group shadow-md hover:shadow-primary/30 transition-shadow duration-300" asChild>
-                 <Link href="#outils-ia">
+                <Link href="#outils-ia">
                   Accéder aux outils IA
                   <Zap className="ml-2 h-5 w-5" />
                 </Link>
@@ -342,7 +360,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* About Section */}
         <section id="apropos" className="py-20 md:py-32 bg-secondary/10">
           <div className="container mx-auto px-4">
             <div className="grid md:grid-cols-2 gap-12 items-center">
@@ -374,7 +391,6 @@ export default function HomePage() {
 
         <Separator className="my-16 md:my-24 bg-border/50" />
 
-        {/* Expertise Section */}
         <section id="expertise" className="py-20 md:py-32">
           <div className="container mx-auto px-4">
             <div className="text-center mb-16">
@@ -400,10 +416,9 @@ export default function HomePage() {
             </div>
           </div>
         </section>
-        
+
         <Separator className="my-16 md:my-24 bg-border/50" />
 
-        {/* AI Tools Section */}
         <section id="outils-ia" className="py-20 md:py-32 bg-secondary/10">
           <div className="container mx-auto px-4">
             <div className="text-center mb-16">
@@ -425,9 +440,9 @@ export default function HomePage() {
                     <CardDescription className="text-muted-foreground mb-6">{tool.description}</CardDescription>
                   </CardContent>
                   <div className="p-6 pt-0">
-                    <Button 
-                      variant="outline" 
-                      className="w-full border-primary text-primary hover:bg-primary/10" 
+                    <Button
+                      variant="outline"
+                      className="w-full border-primary text-primary hover:bg-primary/10"
                       onClick={tool.onClickAction ? tool.onClickAction : undefined}
                       asChild={!tool.onClickAction && !!tool.href}
                     >
@@ -450,7 +465,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Chatbot Modal */}
         <Dialog open={isChatbotModalOpen} onOpenChange={handleChatbotModalOpenChange}>
           <DialogContent className="sm:max-w-[600px] bg-card text-card-foreground border-border/70 flex flex-col h-[70vh] max-h-[700px]">
             <DialogHeader>
@@ -462,31 +476,34 @@ export default function HomePage() {
                 Posez vos questions juridiques de base. Cet assistant fournit des informations générales et non un avis juridique.
               </DialogDescription>
             </DialogHeader>
-            
+
             <div className="flex-grow space-y-4 overflow-y-auto p-4 border border-border/50 rounded-md bg-background/70 custom-scrollbar">
               {messages.length === 0 && !isLoadingChat && (
                 <div className="flex justify-center items-center h-full">
                   <p className="text-muted-foreground italic">Posez votre question pour commencer...</p>
                 </div>
               )}
+
               {messages.map((msg, index) => (
                 <div key={index} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}>
                   <div className={`max-w-[80%] p-3 rounded-lg shadow ${msg.sender === 'user' ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-secondary text-secondary-foreground rounded-bl-none'}`}>
                     <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
                   </div>
-                    <p className={`text-xs mt-1 ${msg.sender === 'user' ? 'text-right' : 'text-left'} text-muted-foreground/70`}>
-                      {msg.sender === 'user' ? 'Vous' : 'Assistant IA'}
-                    </p>
+                  <p className={`text-xs mt-1 ${msg.sender === 'user' ? 'text-right' : 'text-left'} text-muted-foreground/70`}>
+                    {msg.sender === 'user' ? 'Vous' : 'Assistant IA'}
+                  </p>
                 </div>
               ))}
+
               {isLoadingChat && (
                 <div className="flex items-start">
-                    <div className="max-w-[80%] p-3 rounded-lg shadow bg-secondary text-secondary-foreground rounded-bl-none">
+                  <div className="max-w-[80%] p-3 rounded-lg shadow bg-secondary text-secondary-foreground rounded-bl-none">
                     <p className="text-sm italic">L'assistant IA est en train d'écrire...</p>
                   </div>
                 </div>
               )}
             </div>
+
             <form onSubmit={handleSendMessage} className="flex gap-3 items-center pt-4 border-t border-border/50">
               <Input
                 type="text"
@@ -502,7 +519,8 @@ export default function HomePage() {
                 <Send className="ml-2 h-5 w-5" />
               </Button>
             </form>
-             <DialogFooter className="mt-2 sm:justify-start">
+
+            <DialogFooter className="mt-2 sm:justify-start">
               <DialogClose asChild>
                 <Button type="button" variant="outline">
                   Fermer
@@ -512,8 +530,6 @@ export default function HomePage() {
           </DialogContent>
         </Dialog>
 
-
-        {/* Case Pre-evaluation Modal */}
         <Dialog open={isCaseEvaluationModalOpen} onOpenChange={handleCaseEvaluationModalOpenChange}>
           <DialogContent className="sm:max-w-[600px] bg-card text-card-foreground border-border/70">
             <DialogHeader>
@@ -525,7 +541,7 @@ export default function HomePage() {
                 Remplissez ce formulaire pour obtenir une pré-évaluation automatisée de votre situation par notre IA. Cela ne remplace pas une consultation.
               </DialogDescription>
             </DialogHeader>
-            
+
             <form onSubmit={handleCasePreEvaluationSubmit} className="space-y-6 py-4">
               <div>
                 <Label htmlFor="modalCaseType" className="block text-sm font-medium text-muted-foreground mb-1">Type d'affaire</Label>
@@ -547,8 +563,11 @@ export default function HomePage() {
                   </SelectContent>
                 </Select>
               </div>
+
               <div>
-                <Label htmlFor="modalCaseDescription" className="block text-sm font-medium text-muted-foreground mb-1">Description de votre situation (minimum 50 caractères)</Label>
+                <Label htmlFor="modalCaseDescription" className="block text-sm font-medium text-muted-foreground mb-1">
+                  Description de votre situation (minimum 50 caractères)
+                </Label>
                 <Textarea
                   name="caseDescription"
                   id="modalCaseDescription"
@@ -561,11 +580,17 @@ export default function HomePage() {
                   placeholder="Décrivez en détail votre problème juridique, les faits importants, et ce que vous souhaitez obtenir."
                 />
               </div>
+
               {caseEvaluationError && (
                 <p className="text-sm text-destructive">{caseEvaluationError}</p>
               )}
+
               <div>
-                <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-primary/50" disabled={isEvaluatingCase || !caseEvaluationInput.caseType || caseEvaluationInput.caseDescription.length < 50}>
+                <Button
+                  type="submit"
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-primary/50"
+                  disabled={isEvaluatingCase || !caseEvaluationInput.caseType || caseEvaluationInput.caseDescription.length < 50}
+                >
                   {isEvaluatingCase ? "Évaluation en cours..." : "Obtenir une Pré-évaluation IA"}
                   <Zap className="ml-2 h-5 w-5" />
                 </Button>
@@ -584,13 +609,13 @@ export default function HomePage() {
                 <p className="text-muted-foreground whitespace-pre-wrap">{caseEvaluationResult}</p>
               </div>
             )}
+
             <DialogFooter className="mt-2">
               <Button variant="outline" onClick={() => handleCaseEvaluationModalOpenChange(false)}>Fermer</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
-        {/* Document Analyzer Modal */}
         <Dialog open={isDocumentAnalysisModalOpen} onOpenChange={handleDocumentAnalysisModalOpenChange}>
           <DialogContent className="sm:max-w-[600px] bg-card text-card-foreground border-border/70">
             <DialogHeader>
@@ -602,7 +627,7 @@ export default function HomePage() {
                 Téléchargez un document PDF (contrat, etc.) pour obtenir un résumé et une identification des points sensibles par IA.
               </DialogDescription>
             </DialogHeader>
-            
+
             <form onSubmit={handleDocumentAnalysisSubmit} className="space-y-6 py-4">
               <div>
                 <Label htmlFor="pdfFile" className="block text-sm font-medium text-muted-foreground mb-1">Fichier PDF</Label>
@@ -615,14 +640,23 @@ export default function HomePage() {
                   ref={fileInputRef}
                   className="w-full bg-input border-border focus:border-primary focus:ring-primary file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
                 />
-                 {selectedPdfFile && <p className="text-xs text-muted-foreground mt-1">Fichier sélectionné : {selectedPdfFile.name}</p>}
+                {selectedPdfFile && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Fichier sélectionné : {selectedPdfFile.name}
+                  </p>
+                )}
               </div>
-             
+
               {pdfAnalysisError && (
                 <p className="text-sm text-destructive">{pdfAnalysisError}</p>
               )}
+
               <div>
-                <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-primary/50" disabled={isAnalyzingDocument || !selectedPdfFile}>
+                <Button
+                  type="submit"
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-primary/50"
+                  disabled={isAnalyzingDocument || !selectedPdfFile}
+                >
                   {isAnalyzingDocument ? "Analyse en cours..." : "Analyser le Document"}
                   <Zap className="ml-2 h-5 w-5" />
                 </Button>
@@ -643,6 +677,7 @@ export default function HomePage() {
                     <h5 className="font-semibold text-foreground/90">Résumé :</h5>
                     <p className="text-muted-foreground whitespace-pre-wrap text-sm">{pdfAnalysisResult.summary}</p>
                   </div>
+
                   {pdfAnalysisResult.sensitivePoints && pdfAnalysisResult.sensitivePoints.length > 0 && (
                     <div>
                       <h5 className="font-semibold text-foreground/90">Points Sensibles Identifiés :</h5>
@@ -653,20 +688,22 @@ export default function HomePage() {
                       </ul>
                     </div>
                   )}
-                  <p className="text-xs italic text-muted-foreground/80 pt-2 border-t border-border/30 mt-3">{pdfAnalysisResult.disclaimer}</p>
+
+                  <p className="text-xs italic text-muted-foreground/80 pt-2 border-t border-border/30 mt-3">
+                    {pdfAnalysisResult.disclaimer}
+                  </p>
                 </div>
               </div>
             )}
+
             <DialogFooter className="mt-2">
               <Button variant="outline" onClick={() => handleDocumentAnalysisModalOpenChange(false)}>Fermer</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
-
         <Separator className="my-16 md:my-24 bg-border/50" />
 
-        {/* Contact Section */}
         <section id="contact" className="py-20 md:py-32">
           <div className="container mx-auto px-4">
             <div className="text-center mb-16">
@@ -675,6 +712,7 @@ export default function HomePage() {
                 Discutons de votre situation. Je vous réponds en moins de 24h.
               </p>
             </div>
+
             <div className="grid md:grid-cols-2 gap-12 items-start">
               <Card className="bg-card text-card-foreground p-6 md:p-10 shadow-xl border-border/70">
                 <CardHeader className="p-0 mb-6">
@@ -685,23 +723,43 @@ export default function HomePage() {
                     <div>
                       <label htmlFor="name" className="block text-sm font-medium text-muted-foreground mb-1">Nom complet</label>
                       <Input type="text" name="name" id="name" required className="bg-input border-border focus:border-primary focus:ring-primary" aria-describedby="name-error" />
-                      {contactFormState && contactFormState.errors?.name && <p id="name-error" className="text-xs text-destructive mt-1">{contactFormState.errors.name.join(', ')}</p>}
+                      {contactFormState?.errors?.name && (
+                        <p id="name-error" className="text-xs text-destructive mt-1">
+                          {contactFormState.errors.name.join(', ')}
+                        </p>
+                      )}
                     </div>
+
                     <div>
                       <label htmlFor="email" className="block text-sm font-medium text-muted-foreground mb-1">Adresse e-mail</label>
                       <Input type="email" name="email" id="email" required className="bg-input border-border focus:border-primary focus:ring-primary" aria-describedby="email-error" />
-                      {contactFormState && contactFormState.errors?.email && <p id="email-error" className="text-xs text-destructive mt-1">{contactFormState.errors.email.join(', ')}</p>}
+                      {contactFormState?.errors?.email && (
+                        <p id="email-error" className="text-xs text-destructive mt-1">
+                          {contactFormState.errors.email.join(', ')}
+                        </p>
+                      )}
                     </div>
+
                     <div>
                       <label htmlFor="subject" className="block text-sm font-medium text-muted-foreground mb-1">Objet</label>
                       <Input type="text" name="subject" id="subject" required className="bg-input border-border focus:border-primary focus:ring-primary" aria-describedby="subject-error" />
-                      {contactFormState && contactFormState.errors?.subject && <p id="subject-error" className="text-xs text-destructive mt-1">{contactFormState.errors.subject.join(', ')}</p>}
+                      {contactFormState?.errors?.subject && (
+                        <p id="subject-error" className="text-xs text-destructive mt-1">
+                          {contactFormState.errors.subject.join(', ')}
+                        </p>
+                      )}
                     </div>
+
                     <div>
                       <label htmlFor="message" className="block text-sm font-medium text-muted-foreground mb-1">Votre message</label>
                       <Textarea name="message" id="message" rows={4} required className="bg-input border-border focus:border-primary focus:ring-primary" aria-describedby="message-error" />
-                      {contactFormState && contactFormState.errors?.message && <p id="message-error" className="text-xs text-destructive mt-1">{contactFormState.errors.message.join(', ')}</p>}
+                      {contactFormState?.errors?.message && (
+                        <p id="message-error" className="text-xs text-destructive mt-1">
+                          {contactFormState.errors.message.join(', ')}
+                        </p>
+                      )}
                     </div>
+
                     <div>
                       <SubmitContactButton />
                     </div>
@@ -726,29 +784,32 @@ export default function HomePage() {
                       </Button>
                       <Button variant="outline" size="icon" asChild className="border-primary text-primary hover:bg-primary/10">
                         <a href="https://wa.me/33123456789" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
-                           <MessageCircle className="h-5 w-5" />
+                          <MessageCircle className="h-5 w-5" />
                         </a>
                       </Button>
                     </div>
                   </CardContent>
                 </Card>
+
                 <div className="aspect-video bg-card rounded-lg shadow-lg overflow-hidden border-border/70">
-                   <Image
-                      src="https://placehold.co/600x400/1f1f1f/0a84ff.png?text=Carte+ici"
-                      alt="Carte de localisation du cabinet"
-                      width={600}
-                      height={400}
-                      className="w-full h-full object-cover"
-                      data-ai-hint="dark map interface Paris"
-                    />
+                  <Image
+                    src="https://placehold.co/600x400/1f1f1f/0a84ff.png?text=Carte+ici"
+                    alt="Carte de localisation du cabinet"
+                    width={600}
+                    height={400}
+                    className="w-full h-full object-cover"
+                    data-ai-hint="dark map interface Paris"
+                  />
                 </div>
               </div>
             </div>
           </div>
         </section>
       </main>
+
       <Footer />
-       <style jsx global>{`
+
+      <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 8px;
         }

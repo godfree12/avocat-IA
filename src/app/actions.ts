@@ -1,6 +1,8 @@
-
 'use server';
 
+import { legalChat } from '@/ai/flows/legal-chat-flow';
+import { preEvaluateCase } from '@/ai/flows/case-pre-evaluation-flow';
+import { analyzeDocument } from '@/ai/flows/document-analyzer-flow';
 import { z } from 'zod';
 
 // Schéma de validation pour le formulaire de contact
@@ -44,27 +46,6 @@ export async function sendContactMessage(
 
     const { name, email, subject, message } = validatedFields.data;
 
-    // --- DÉBUT DE LA SIMULATION D'ENVOI D'EMAIL ---
-    // Dans une application réelle, vous intégreriez ici un service d'envoi d'e-mails.
-    // Exemple avec un service fictif sendEmail():
-    //
-    // import { sendEmail } from '@/lib/email-service'; // Supposons que vous avez un module pour cela
-    //
-    // await sendEmail({
-    //   to: 'contact@jeandupont.avocat', // L'adresse e-mail de l'avocat
-    //   from: 'noreply@votredomaine.com', // Une adresse d'expédition configurée
-    //   replyTo: email, // L'email de l'utilisateur pour la réponse
-    //   subject: `Nouveau message de contact: ${subject}`,
-    //   html: `
-    //     <h1>Nouveau message de contact</h1>
-    //     <p><strong>Nom:</strong> ${name}</p>
-    //     <p><strong>Email:</strong> ${email}</p>
-    //     <p><strong>Objet:</strong> ${subject}</p>
-    //     <p><strong>Message:</strong></p>
-    //     <p>${message.replace(/\n/g, '<br>')}</p>
-    //   `,
-    // });
-
     console.log("--- SIMULATION D'ENVOI D'EMAIL ---");
     console.log("Un vrai email serait envoyé à : contact@jeandupont.avocat");
     console.log("De la part de (Reply-To) :", email);
@@ -72,7 +53,6 @@ export async function sendContactMessage(
     console.log("Objet :", subject);
     console.log("Message :", message);
     console.log("--- FIN DE LA SIMULATION ---");
-    // --- FIN DE LA SIMULATION D'ENVOI D'EMAIL ---
 
     return {
       message: "Message envoyé avec succès ! Maître Dupont vous contactera bientôt.",
@@ -87,4 +67,33 @@ export async function sendContactMessage(
       errors: {},
     };
   }
+}
+
+export async function runLegalChat(question: string) {
+  const result = await legalChat({ question });
+  return {
+    answer: result.answer,
+  };
+}
+
+export async function runCasePreEvaluation(input: {
+  caseType: string;
+  caseDescription: string;
+}) {
+  const result = await preEvaluateCase(input);
+  return {
+    evaluation: result.evaluation,
+  };
+}
+
+export async function runDocumentAnalysis(input: {
+  pdfDataUri: string;
+  fileName: string;
+}) {
+  const result = await analyzeDocument(input);
+  return {
+    summary: result.summary,
+    sensitivePoints: result.sensitivePoints,
+    disclaimer: result.disclaimer,
+  };
 }
