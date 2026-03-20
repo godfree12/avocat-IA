@@ -23,16 +23,16 @@ import {
 import {
   sendContactMessage,
   type ContactFormState,
-  askLegalAssistant,
-  reviewCase,
-  reviewDocument,
+  askAssistant,
+  evaluateCase,
+  analyzePdfDocument,
 } from '@/app/actions';
 import { useToast } from "@/hooks/use-toast";
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 
-const expertiseAreas = [
+const practiceAreas = [
   {
     icon: Briefcase,
     title: 'Droit des Affaires',
@@ -82,7 +82,7 @@ const initialContactFormState: ContactFormState = {
   status: null,
 };
 
-function SubmitContactButton() {
+function ContactSubmitButton() {
   const { pending } = useFormStatus();
 
   return (
@@ -97,7 +97,7 @@ function SubmitContactButton() {
   );
 }
 
-export default function HomePage() {
+export default function CabinetLandingPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentMessage, setCurrentMessage] = useState('');
   const [isLoadingChat, setIsLoadingChat] = useState(false);
@@ -124,7 +124,7 @@ export default function HomePage() {
 
   const [isChatbotModalOpen, setIsChatbotModalOpen] = useState(false);
 
-  const aiTools = [
+  const servicesIntelligents = [
     {
       icon: Bot,
       title: 'Assistant Juridique IA',
@@ -175,7 +175,7 @@ export default function HomePage() {
     }
   }, [contactFormState, toast]);
 
-  const handleSendMessage = async (event: FormEvent<HTMLFormElement>) => {
+  const handleAssistantQuestion = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!currentMessage.trim() || isLoadingChat) return;
 
@@ -185,7 +185,7 @@ export default function HomePage() {
     setIsLoadingChat(true);
 
     try {
-      const aiResponse = await askLegalAssistant(newUserMessage.text);
+      const aiResponse = await askAssistant(newUserMessage.text);
       const newAiMessage: ChatMessage = { sender: 'ai', text: aiResponse.answer };
       setMessages(prev => [...prev, newAiMessage]);
     } catch (error) {
@@ -213,7 +213,7 @@ export default function HomePage() {
     setCaseEvaluationError(null);
 
     try {
-      const result = await reviewCase({
+      const result = await evaluateCase({
         caseType: caseEvaluationInput.caseType,
         caseDescription: caseEvaluationInput.caseDescription,
       });
@@ -281,7 +281,7 @@ export default function HomePage() {
         const base64data = reader.result as string;
 
         try {
-          const result = await reviewDocument({
+          const result = await analyzePdfDocument({
             pdfDataUri: base64data,
             fileName: selectedPdfFile.name,
           });
@@ -405,7 +405,7 @@ export default function HomePage() {
               </p>
             </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {expertiseAreas.map((area) => (
+              {practiceAreas.map((area) => (
                 <Card key={area.title} className="bg-card text-card-foreground border-border/70 hover:border-primary/50 hover:shadow-md hover:shadow-border/30 transition-all duration-300 transform hover:-translate-y-1">
                   <CardHeader>
                     <div className="flex items-center gap-4 mb-3">
@@ -433,7 +433,7 @@ export default function HomePage() {
               </p>
             </div>
             <div className="grid md:grid-cols-2 gap-8">
-              {aiTools.map((tool) => (
+              {servicesIntelligents.map((tool) => (
                 <Card key={tool.title} className="bg-card text-card-foreground border-border/70 flex flex-col justify-between hover:border-primary/50 hover:shadow-md hover:shadow-border/30 transition-all duration-300 transform hover:-translate-y-1">
                   <CardHeader>
                     <div className="flex items-center gap-4 mb-3">
@@ -510,7 +510,7 @@ export default function HomePage() {
               )}
             </div>
 
-            <form onSubmit={handleSendMessage} className="flex gap-3 items-center pt-4 border-t border-border/50">
+            <form onSubmit={handleAssistantQuestion} className="flex gap-3 items-center pt-4 border-t border-border/50">
               <Input
                 type="text"
                 value={currentMessage}
@@ -561,7 +561,7 @@ export default function HomePage() {
                     <SelectValue placeholder="Sélectionnez un type d'affaire" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover border-border">
-                    {expertiseAreas.map(area => (
+                    {practiceAreas.map(area => (
                       <SelectItem key={area.title} value={area.title}>
                         {area.title}
                       </SelectItem>
@@ -767,7 +767,7 @@ export default function HomePage() {
                     </div>
 
                     <div>
-                      <SubmitContactButton />
+                      <ContactSubmitButton />
                     </div>
                   </form>
                 </CardContent>

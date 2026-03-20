@@ -74,14 +74,14 @@ export async function sendContactMessage(
   }
 }
 
-export async function askLegalAssistant(question: string) {
+export async function askAssistant(question: string) {
   const result = await legalChat({ question });
   return {
     answer: result.answer,
   };
 }
 
-export async function reviewCase(input: {
+export async function evaluateCase(input: {
   caseType: string;
   caseDescription: string;
 }) {
@@ -91,7 +91,7 @@ export async function reviewCase(input: {
   };
 }
 
-export async function reviewDocument(input: {
+export async function analyzePdfDocument(input: {
   pdfDataUri: string;
   fileName: string;
 }) {
