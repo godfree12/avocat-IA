@@ -1,6 +1,6 @@
 # Application Web — Cabinet d’Avocat
 
-![Preview](./im1.png)
+![Preview](./img1.png)
 
 ## Présentation
 
