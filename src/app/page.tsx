@@ -1,7 +1,3 @@
-/**
- * @author Godfree AKAKPO
- */
-
 "use client";
 
 import Image from 'next/image';
@@ -74,6 +70,17 @@ type DocumentAnalysisResult = {
   disclaimer: string;
 };
 
+type AssistantService = {
+  icon: any;
+  title: string;
+  description: string;
+  actionText: string;
+  onClickAction?: () => void;
+  href?: string;
+  external?: boolean;
+  disabled?: boolean;
+};
+
 const initialContactFormState: ContactFormState = {
   message: null,
   errors: {},
@@ -122,13 +129,16 @@ export default function CabinetLandingPage() {
 
   const [isChatbotModalOpen, setIsChatbotModalOpen] = useState(false);
 
-  const servicesIntelligents = [
+  const servicesIntelligents: AssistantService[] = [
     {
       icon: Bot,
       title: 'Assistant Juridique IA',
       description: 'Posez vos questions juridiques de base et obtenez des réponses instantanées 24/7.',
       actionText: 'Dialoguer avec l\'IA',
       onClickAction: () => setIsChatbotModalOpen(true),
+      href: undefined,
+      external: false,
+      disabled: false,
     },
     {
       icon: UploadCloud,
@@ -136,6 +146,9 @@ export default function CabinetLandingPage() {
       description: 'Glissez-déposez ou sélectionnez un contrat/document PDF pour un résumé et une détection des points sensibles par IA.',
       actionText: 'Analyser un document',
       onClickAction: () => setIsDocumentAnalysisModalOpen(true),
+      href: undefined,
+      external: false,
+      disabled: false,
     },
     {
       icon: FileText,
@@ -143,12 +156,18 @@ export default function CabinetLandingPage() {
       description: 'Remplissez un court formulaire pour une estimation par IA des chances de succès de votre dossier.',
       actionText: 'Évaluer mon cas',
       onClickAction: () => setIsCaseEvaluationModalOpen(true),
+      href: undefined,
+      external: false,
+      disabled: false,
     },
     {
       icon: CalendarDays,
       title: 'Prise de RDV',
       description: 'Indisponible - Veuillez nous contacter directement pour prendre rendez-vous.',
       actionText: 'Indisponible',
+      onClickAction: undefined,
+      href: undefined,
+      external: false,
       disabled: true,
     }
   ];
