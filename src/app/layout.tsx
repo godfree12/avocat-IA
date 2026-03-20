@@ -1,6 +1,5 @@
 /**
  * @author Godfree AKAKPO
- * Root layout component for the legal cabinet website
  */
 
 import type { Metadata } from 'next';

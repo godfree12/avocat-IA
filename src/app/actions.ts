@@ -1,7 +1,3 @@
-/**
- * @author Godfree AKAKPO
- * Server actions for form submissions and service calls
- */
 
 'use server';
 

@@ -1,7 +1,5 @@
 /**
  * @author Godfree AKAKPO
- * Main homepage component for the legal cabinet
- * Features: expertise showcase, AI-powered tools, contact forms
  */
 
 "use client";
