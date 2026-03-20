@@ -1,5 +1,7 @@
 # Application Web — Cabinet d’Avocat
 
+![Preview](./im1.png)
+
 ## Présentation
 
 Cette application web simule l’interface d’un cabinet d’avocat moderne, avec une attention particulière portée à l’expérience utilisateur et à l’intégration d’outils interactifs.
@@ -15,8 +17,8 @@ L’objectif du projet était de concevoir une interface claire, fonctionnelle e
 
 ### Interface principale
 - Présentation du cabinet et de ses domaines d’expertise
-- Structure claire et navigation fluide
-- Design sobre et lisible
+- Navigation fluide
+- Design structuré et lisible
 
 ### Formulaire de contact
 - Envoi de messages
@@ -34,34 +36,30 @@ L’objectif du projet était de concevoir une interface claire, fonctionnelle e
 
 ## Aperçu
 
-### Interface principale
-![Interface principale](./docs/hero.png)
-
 ### Outils d’assistance
-![Outils](./docs/tools.png)
+![Outils](./im1.png)
 
-### Assistant interactif
-![Assistant](./docs/chat.png)
+### Assistant — interaction
+![Assistant](./im2.png)
+
+### Exemple de réponse
+![Assistant réponse](./im3.png)
 
 ---
 
 ## Test rapide
 
-Voici un exemple de test réalisé sur l’assistant :
+Exemple d’interaction avec l’assistant :
 
-**Question :**  
+**Question :**
 > j’ai été témoin d’un vol, suis-je obligé de témoigner ?
 
-**Réponse :**  
-L’assistant explique que, selon les systèmes juridiques, une personne peut être amenée à témoigner et qu’une convocation officielle implique généralement une obligation légale de comparution.
-
-Ce test montre le comportement général de l’interface et la manière dont les réponses sont structurées.
+**Réponse :**
+L’interface retourne une réponse structurée expliquant que, selon le contexte juridique, une personne peut être amenée à témoigner, notamment en cas de convocation officielle.
 
 ---
 
 ## Démo en ligne
-
-Tu peux tester l’application directement ici :
 
 https://avocat-ia-two.vercel.app/#outils-ia
 
@@ -79,14 +77,14 @@ https://avocat-ia-two.vercel.app/#outils-ia
 
 ## Structure du projet
 
-- `src/app` : pages principales
-- `components` : composants réutilisables
-- `app/actions` : logique serveur
-- `public` : fichiers statiques
+- `src/app` : pages principales  
+- `components` : composants réutilisables  
+- `app/actions` : logique serveur  
+- `public` : assets statiques  
 
 ---
 
-## Lancer le projet en local
+## Lancer le projet
 
 ```bash
 npm install
