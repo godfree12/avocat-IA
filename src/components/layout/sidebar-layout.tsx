@@ -39,7 +39,7 @@ export function HeaderNavigationLayout({ children }: PropsWithChildren) {
         <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link href="#hero" className="flex items-center gap-2 group" onClick={handleLinkClick}>
             <Logo className="h-8 w-8 text-primary transition-transform group-hover:scale-110" />
-            <h1 className="text-xl font-orbitron font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">
+            <h1 className="text-xl font-serif font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">
               Jean Dupont
             </h1>
           </Link>

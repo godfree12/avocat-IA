@@ -1,3 +1,8 @@
+/**
+ * @author Godfree AKAKPO
+ * Legal Chat Flow Service
+ * Handles conversational AI interactions for legal questions
+ */
 
 'use server';
 /**
@@ -8,7 +13,7 @@
  * - LegalChatOutput - The return type for the legalChat function.
  */
 
-import {ai} from '@/ai/genkit';
+import {assistantEngine} from '@/services/assistant-engine';
 import {z} from 'genkit';
 
 const LegalChatInputSchema = z.object({
@@ -25,7 +30,7 @@ export async function legalChat(input: LegalChatInput): Promise<LegalChatOutput>
   return legalChatFlow(input);
 }
 
-const prompt = ai.definePrompt({
+const prompt = assistantEngine.definePrompt({
   name: 'legalChatPrompt',
   input: {schema: LegalChatInputSchema},
   output: {schema: LegalChatOutputSchema},
@@ -59,7 +64,7 @@ Réponse de l'assistant IA :`,
   }
 });
 
-const legalChatFlow = ai.defineFlow(
+const legalChatFlow = assistantEngine.defineFlow(
   {
     name: 'legalChatFlow',
     inputSchema: LegalChatInputSchema,

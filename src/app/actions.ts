@@ -1,8 +1,13 @@
+/**
+ * @author Godfree AKAKPO
+ * Server actions for form submissions and service calls
+ */
+
 'use server';
 
-import { legalChat } from '@/ai/flows/legal-chat-flow';
-import { preEvaluateCase } from '@/ai/flows/case-pre-evaluation-flow';
-import { analyzeDocument } from '@/ai/flows/document-analyzer-flow';
+import { legalChat } from '@/services/flows/conversation-service';
+import { preEvaluateCase } from '@/services/flows/case-review-service';
+import { analyzeDocument } from '@/services/flows/document-review-service';
 import { z } from 'zod';
 
 // Schéma de validation pour le formulaire de contact
@@ -69,14 +74,14 @@ export async function sendContactMessage(
   }
 }
 
-export async function runLegalChat(question: string) {
+export async function askLegalAssistant(question: string) {
   const result = await legalChat({ question });
   return {
     answer: result.answer,
   };
 }
 
-export async function runCasePreEvaluation(input: {
+export async function reviewCase(input: {
   caseType: string;
   caseDescription: string;
 }) {
@@ -86,7 +91,7 @@ export async function runCasePreEvaluation(input: {
   };
 }
 
-export async function runDocumentAnalysis(input: {
+export async function reviewDocument(input: {
   pdfDataUri: string;
   fileName: string;
 }) {

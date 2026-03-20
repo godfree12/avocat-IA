@@ -1,3 +1,8 @@
+/**
+ * @author Godfree AKAKPO
+ * Case Pre-Evaluation Flow Service
+ * Provides AI-powered preliminary case assessment
+ */
 
 'use server';
 /**
@@ -8,7 +13,7 @@
  * - CasePreEvaluationOutput - The return type for the preEvaluateCase function.
  */
 
-import {ai} from '@/ai/genkit';
+import {assistantEngine} from '@/services/assistant-engine';
 import {z} from 'genkit';
 
 const CasePreEvaluationInputSchema = z.object({
@@ -26,7 +31,7 @@ export async function preEvaluateCase(input: CasePreEvaluationInput): Promise<Ca
   return casePreEvaluationFlow(input);
 }
 
-const prompt = ai.definePrompt({
+const prompt = assistantEngine.definePrompt({
   name: 'casePreEvaluationPrompt',
   input: {schema: CasePreEvaluationInputSchema},
   output: {schema: CasePreEvaluationOutputSchema},
@@ -67,7 +72,7 @@ Structurez votre sortie pour correspondre au schéma "evaluation".
   }
 });
 
-const casePreEvaluationFlow = ai.defineFlow(
+const casePreEvaluationFlow = assistantEngine.defineFlow(
   {
     name: 'casePreEvaluationFlow',
     inputSchema: CasePreEvaluationInputSchema,

@@ -1,3 +1,9 @@
+/**
+ * @author Godfree AKAKPO
+ * Main homepage component for the legal cabinet
+ * Features: expertise showcase, AI-powered tools, contact forms
+ */
+
 "use client";
 
 import Image from 'next/image';
@@ -17,9 +23,9 @@ import {
 import {
   sendContactMessage,
   type ContactFormState,
-  runLegalChat,
-  runCasePreEvaluation,
-  runDocumentAnalysis,
+  askLegalAssistant,
+  reviewCase,
+  reviewDocument,
 } from '@/app/actions';
 import { useToast } from "@/hooks/use-toast";
 import { Label } from '@/components/ui/label';
@@ -82,7 +88,7 @@ function SubmitContactButton() {
   return (
     <Button
       type="submit"
-      className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-primary/50"
+      className="w-full bg-primary hover:bg-primary/85 text-primary-foreground shadow-sm hover:shadow-md"
       disabled={pending}
     >
       {pending ? "Envoi en cours..." : "Envoyer le Message"}
@@ -142,11 +148,10 @@ export default function HomePage() {
     },
     {
       icon: CalendarDays,
-      title: 'Prise de RDV Intelligente',
-      description: 'Notre agenda IA vous aide à trouver le créneau parfait selon l\'urgence et le domaine de votre affaire.',
-      actionText: 'Prendre RDV',
-      href: 'https://calendly.com',
-      external: true,
+      title: 'Prise de RDV',
+      description: 'Indisponible - Veuillez nous contacter directement pour prendre rendez-vous.',
+      actionText: 'Indisponible',
+      disabled: true,
     }
   ];
 
@@ -180,11 +185,11 @@ export default function HomePage() {
     setIsLoadingChat(true);
 
     try {
-      const aiResponse = await runLegalChat(newUserMessage.text);
+      const aiResponse = await askLegalAssistant(newUserMessage.text);
       const newAiMessage: ChatMessage = { sender: 'ai', text: aiResponse.answer };
       setMessages(prev => [...prev, newAiMessage]);
     } catch (error) {
-      console.error("Error calling runLegalChat:", error);
+      console.error("Error calling askLegalAssistant:", error);
       const errorMessage: ChatMessage = {
         sender: 'ai',
         text: "Désolé, une erreur s'est produite. Veuillez réessayer.",
@@ -208,13 +213,13 @@ export default function HomePage() {
     setCaseEvaluationError(null);
 
     try {
-      const result = await runCasePreEvaluation({
+      const result = await reviewCase({
         caseType: caseEvaluationInput.caseType,
         caseDescription: caseEvaluationInput.caseDescription,
       });
       setCaseEvaluationResult(result.evaluation);
     } catch (error: any) {
-      console.error("Error calling runCasePreEvaluation:", error);
+      console.error("Error calling reviewCase:", error);
       if (
         error?.details &&
         Array.isArray(error.details) &&
@@ -276,13 +281,13 @@ export default function HomePage() {
         const base64data = reader.result as string;
 
         try {
-          const result = await runDocumentAnalysis({
+          const result = await reviewDocument({
             pdfDataUri: base64data,
             fileName: selectedPdfFile.name,
           });
           setPdfAnalysisResult(result);
         } catch (flowError: any) {
-          console.error("Error calling runDocumentAnalysis:", flowError);
+          console.error("Error calling reviewDocument:", flowError);
           setPdfAnalysisError("Désolé, une erreur s'est produite lors de l'analyse du document. Veuillez réessayer.");
           setPdfAnalysisResult(null);
         } finally {
@@ -334,23 +339,23 @@ export default function HomePage() {
           </video>
 
           <div className="relative z-10 animate-fade-in-down">
-            <h1 className="text-5xl md:text-7xl font-orbitron font-bold tracking-tight mb-4">
+            <h1 className="text-5xl md:text-7xl font-serif font-bold tracking-tight mb-4">
               Maître Jean Dupont
             </h1>
-            <h2 className="text-3xl md:text-5xl font-orbitron text-primary mb-8">
+            <h2 className="text-3xl md:text-5xl font-serif text-foreground mb-8">
               Avocat d'élite au Barreau de Paris
             </h2>
             <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto mb-10">
               Façonner l'avenir de la justice, un dossier à la fois. Votre destin, ma priorité.
             </p>
             <div className="space-x-4">
-              <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground group shadow-lg hover:shadow-primary/50 transition-shadow duration-300" asChild>
+              <Button size="lg" className="bg-primary hover:bg-primary/85 text-primary-foreground group shadow-md hover:shadow-lg transition-shadow duration-300" asChild>
                 <Link href="#apropos">
                   Découvrir mon approche
                   <ChevronRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" className="border-primary text-primary hover:bg-primary/10 group shadow-md hover:shadow-primary/30 transition-shadow duration-300" asChild>
+              <Button size="lg" variant="outline" className="border-primary text-primary hover:bg-primary/5 group shadow-sm hover:shadow-md transition-shadow duration-300" asChild>
                 <Link href="#outils-ia">
                   Accéder aux outils IA
                   <Zap className="ml-2 h-5 w-5" />
@@ -374,7 +379,7 @@ export default function HomePage() {
                 />
               </div>
               <div className="text-center md:text-left">
-                <h2 className="text-4xl font-orbitron font-bold tracking-tight mb-6 text-primary">Philosophie & Engagement</h2>
+                <h2 className="text-4xl font-serif font-bold tracking-tight mb-6 text-foreground">Philosophie & Engagement</h2>
                 <blockquote className="text-2xl italic text-foreground mb-8 border-l-4 border-primary pl-6 py-2">
                   "Je ne défends pas des dossiers. Je défends des destins."
                 </blockquote>
@@ -394,18 +399,18 @@ export default function HomePage() {
         <section id="expertise" className="py-20 md:py-32">
           <div className="container mx-auto px-4">
             <div className="text-center mb-16">
-              <h2 className="text-4xl font-orbitron font-bold tracking-tight text-primary">Domaines d'Expertise</h2>
+              <h2 className="text-4xl font-serif font-bold tracking-tight text-foreground">Domaines d'Expertise</h2>
               <p className="text-xl text-muted-foreground mt-3 max-w-2xl mx-auto">
                 Une maîtrise pointue dans divers champs du droit pour une défense complète et efficace.
               </p>
             </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {expertiseAreas.map((area) => (
-                <Card key={area.title} className="bg-card text-card-foreground border-border/70 hover:border-primary/70 hover:shadow-xl hover:shadow-primary/20 transition-all duration-300 transform hover:-translate-y-1">
+                <Card key={area.title} className="bg-card text-card-foreground border-border/70 hover:border-primary/50 hover:shadow-md hover:shadow-border/30 transition-all duration-300 transform hover:-translate-y-1">
                   <CardHeader>
                     <div className="flex items-center gap-4 mb-3">
                       <area.icon className="h-10 w-10 text-primary" />
-                      <CardTitle className="text-2xl font-orbitron">{area.title}</CardTitle>
+                      <CardTitle className="text-2xl font-serif">{area.title}</CardTitle>
                     </div>
                   </CardHeader>
                   <CardContent>
@@ -422,18 +427,18 @@ export default function HomePage() {
         <section id="outils-ia" className="py-20 md:py-32 bg-secondary/10">
           <div className="container mx-auto px-4">
             <div className="text-center mb-16">
-              <h2 className="text-4xl font-orbitron font-bold tracking-tight text-primary">Outils IA Innovants</h2>
+              <h2 className="text-4xl font-serif font-bold tracking-tight text-foreground">Outils d'Assistance</h2>
               <p className="text-xl text-muted-foreground mt-3 max-w-2xl mx-auto">
-                L'intelligence artificielle au service de votre défense : des outils exclusifs pour une justice plus accessible et performante.
+                L'intelligence artificielle au service de votre défense : des outils innovants pour une justice plus accessible et performante.
               </p>
             </div>
             <div className="grid md:grid-cols-2 gap-8">
               {aiTools.map((tool) => (
-                <Card key={tool.title} className="bg-card text-card-foreground border-border/70 flex flex-col justify-between hover:border-primary/70 hover:shadow-xl hover:shadow-primary/20 transition-all duration-300 transform hover:-translate-y-1">
+                <Card key={tool.title} className="bg-card text-card-foreground border-border/70 flex flex-col justify-between hover:border-primary/50 hover:shadow-md hover:shadow-border/30 transition-all duration-300 transform hover:-translate-y-1">
                   <CardHeader>
                     <div className="flex items-center gap-4 mb-3">
                       <tool.icon className="h-10 w-10 text-primary" />
-                      <CardTitle className="text-2xl font-orbitron">{tool.title}</CardTitle>
+                      <CardTitle className="text-2xl font-serif">{tool.title}</CardTitle>
                     </div>
                   </CardHeader>
                   <CardContent className="flex-grow">
@@ -442,11 +447,12 @@ export default function HomePage() {
                   <div className="p-6 pt-0">
                     <Button
                       variant="outline"
-                      className="w-full border-primary text-primary hover:bg-primary/10"
+                      className="w-full border-primary text-primary hover:bg-primary/5"
                       onClick={tool.onClickAction ? tool.onClickAction : undefined}
-                      asChild={!tool.onClickAction && !!tool.href}
+                      asChild={!tool.onClickAction && !!tool.href && !tool.disabled}
+                      disabled={tool.disabled}
                     >
-                      {tool.href && !tool.onClickAction ? (
+                      {tool.href && !tool.onClickAction && !tool.disabled ? (
                         <Link href={tool.href} target={tool.external ? "_blank" : "_self"} rel={tool.external ? "noopener noreferrer" : ""}>
                           {tool.actionText}
                           <ChevronRight className="ml-2 h-4 w-4" />
@@ -470,7 +476,7 @@ export default function HomePage() {
             <DialogHeader>
               <div className="flex items-center mb-2">
                 <Bot className="h-8 w-8 text-primary mr-3 shrink-0" />
-                <DialogTitle className="text-2xl font-orbitron text-primary">Assistant Juridique IA</DialogTitle>
+                <DialogTitle className="text-2xl font-serif text-foreground">Assistant Juridique</DialogTitle>
               </div>
               <DialogDescription className="text-muted-foreground">
                 Posez vos questions juridiques de base. Cet assistant fournit des informations générales et non un avis juridique.
@@ -514,7 +520,7 @@ export default function HomePage() {
                 disabled={isLoadingChat}
                 aria-label="Votre question juridique"
               />
-              <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-2.5 text-base" disabled={isLoadingChat || !currentMessage.trim()}>
+              <Button type="submit" className="bg-primary hover:bg-primary/85 text-primary-foreground px-6 py-2.5 text-base shadow-sm hover:shadow-md" disabled={isLoadingChat || !currentMessage.trim()}>
                 Envoyer
                 <Send className="ml-2 h-5 w-5" />
               </Button>
@@ -535,7 +541,7 @@ export default function HomePage() {
             <DialogHeader>
               <div className="flex items-center mb-2">
                 <FileText className="h-8 w-8 text-primary mr-3 shrink-0" />
-                <DialogTitle className="text-2xl font-orbitron text-primary">Pré-évaluation de Cas IA</DialogTitle>
+                <DialogTitle className="text-2xl font-serif text-foreground">Pré-évaluation de Cas</DialogTitle>
               </div>
               <DialogDescription className="text-muted-foreground">
                 Remplissez ce formulaire pour obtenir une pré-évaluation automatisée de votre situation par notre IA. Cela ne remplace pas une consultation.
@@ -588,10 +594,10 @@ export default function HomePage() {
               <div>
                 <Button
                   type="submit"
-                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-primary/50"
+                  className="w-full bg-primary hover:bg-primary/85 text-primary-foreground shadow-md hover:shadow-lg"
                   disabled={isEvaluatingCase || !caseEvaluationInput.caseType || caseEvaluationInput.caseDescription.length < 50}
                 >
-                  {isEvaluatingCase ? "Évaluation en cours..." : "Obtenir une Pré-évaluation IA"}
+                  {isEvaluatingCase ? "Évaluation en cours..." : "Obtenir une Pré-évaluation"}
                   <Zap className="ml-2 h-5 w-5" />
                 </Button>
               </div>
@@ -605,7 +611,7 @@ export default function HomePage() {
 
             {caseEvaluationResult && !isEvaluatingCase && (
               <div className="mt-6 p-4 bg-secondary/50 border border-border/50 rounded-lg">
-                <h4 className="text-lg font-orbitron text-primary mb-2">Résultat de la Pré-évaluation IA :</h4>
+                <h4 className="text-lg font-serif text-foreground mb-2">Résultat de la Pré-évaluation :</h4>
                 <p className="text-muted-foreground whitespace-pre-wrap">{caseEvaluationResult}</p>
               </div>
             )}
@@ -621,7 +627,7 @@ export default function HomePage() {
             <DialogHeader>
               <div className="flex items-center mb-2">
                 <FileScan className="h-8 w-8 text-primary mr-3 shrink-0" />
-                <DialogTitle className="text-2xl font-orbitron text-primary">Analyseur de Document IA</DialogTitle>
+                <DialogTitle className="text-2xl font-serif text-foreground">Analyseur de Document</DialogTitle>
               </div>
               <DialogDescription className="text-muted-foreground">
                 Téléchargez un document PDF (contrat, etc.) pour obtenir un résumé et une identification des points sensibles par IA.
@@ -654,7 +660,7 @@ export default function HomePage() {
               <div>
                 <Button
                   type="submit"
-                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-primary/50"
+                  className="w-full bg-primary hover:bg-primary/85 text-primary-foreground shadow-md hover:shadow-lg"
                   disabled={isAnalyzingDocument || !selectedPdfFile}
                 >
                   {isAnalyzingDocument ? "Analyse en cours..." : "Analyser le Document"}
@@ -671,7 +677,7 @@ export default function HomePage() {
 
             {pdfAnalysisResult && !isAnalyzingDocument && (
               <div className="mt-6 p-4 bg-secondary/50 border border-border/50 rounded-lg max-h-80 overflow-y-auto custom-scrollbar">
-                <h4 className="text-lg font-orbitron text-primary mb-2">Résultat de l'Analyse IA :</h4>
+                <h4 className="text-lg font-serif text-foreground mb-2">Résultat de l'Analyse :</h4>
                 <div className="space-y-3">
                   <div>
                     <h5 className="font-semibold text-foreground/90">Résumé :</h5>
@@ -707,7 +713,7 @@ export default function HomePage() {
         <section id="contact" className="py-20 md:py-32">
           <div className="container mx-auto px-4">
             <div className="text-center mb-16">
-              <h2 className="text-4xl font-orbitron font-bold tracking-tight text-primary">Contactez-Moi</h2>
+              <h2 className="text-4xl font-serif font-bold tracking-tight text-primary">Contactez-Moi</h2>
               <p className="text-xl text-muted-foreground mt-3 max-w-2xl mx-auto">
                 Discutons de votre situation. Je vous réponds en moins de 24h.
               </p>
@@ -716,7 +722,7 @@ export default function HomePage() {
             <div className="grid md:grid-cols-2 gap-12 items-start">
               <Card className="bg-card text-card-foreground p-6 md:p-10 shadow-xl border-border/70">
                 <CardHeader className="p-0 mb-6">
-                  <CardTitle className="text-3xl font-orbitron text-center md:text-left">Envoyer un message</CardTitle>
+                  <CardTitle className="text-3xl font-serif text-center md:text-left">Envoyer un message</CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
                   <form ref={contactFormRef} action={contactFormAction} className="space-y-6">
@@ -770,7 +776,7 @@ export default function HomePage() {
               <div className="space-y-8">
                 <Card className="bg-card text-card-foreground p-6 shadow-lg border-border/70">
                   <CardHeader className="p-0 mb-4">
-                    <CardTitle className="text-2xl font-orbitron">Coordonnées</CardTitle>
+                    <CardTitle className="text-2xl font-serif">Coordonnées</CardTitle>
                   </CardHeader>
                   <CardContent className="p-0 space-y-3 text-muted-foreground">
                     <p><strong>Email :</strong> <a href="mailto:contact@jeandupont.avocat" className="text-primary hover:underline">contact@jeandupont.avocat</a></p>

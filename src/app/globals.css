@@ -3,83 +3,83 @@
 @tailwind utilities;
 
 body {
-  font-family: var(--font-inter), Arial, Helvetica, sans-serif;
+  font-family: var(--font-poppins), 'Poppins', Arial, Helvetica, sans-serif;
 }
 
 @layer base {
   :root {
-    --background: 218 41% 7%; /* Noir carbone #0b0f17 */
-    --foreground: 0 0% 69%; /* Argent / chrome #b0b0b0 */
-    --card: 0 0% 12%; /* Gris fumé #1f1f1f */
-    --card-foreground: 0 0% 69%; /* Argent / chrome #b0b0b0 */
-    --popover: 0 0% 12%; /* Gris fumé #1f1f1f */
-    --popover-foreground: 0 0% 69%; /* Argent / chrome #b0b0b0 */
-    --primary: 210 100% 52%; /* Bleu électrique profond #0a84ff */
-    --primary-foreground: 0 0% 100%; /* White for contrast on blue */
-    --secondary: 0 0% 15%; /* Slightly lighter Gris fumé for secondary elements */
-    --secondary-foreground: 0 0% 69%; /* Argent / chrome */
-    --muted: 0 0% 40%; /* Muted gray for less prominent text */
-    --muted-foreground: 0 0% 50%; /* Slightly lighter muted text */
-    --accent: 210 100% 52%; /* Bleu électrique profond #0a84ff */
+    --background: 0 0% 98%; /* Blanc cassé crème #faf7f2 */
+    --foreground: 220 8% 20%; /* Gris foncé professionnel #2a2a33 */
+    --card: 0 0% 100%; /* Blanc pur pour les cartes */
+    --card-foreground: 220 8% 20%; /* Gris foncé */
+    --popover: 0 0% 100%; /* Blanc pur */
+    --popover-foreground: 220 8% 20%; /* Gris foncé */
+    --primary: 220 40% 35%; /* Bleu marine professionnel #3d5a6c */
+    --primary-foreground: 0 0% 100%; /* White for contrast */
+    --secondary: 220 8% 92%; /* Gris très clair pour secondary elements */
+    --secondary-foreground: 220 8% 20%; /* Gris foncé */
+    --muted: 220 4% 60%; /* Gris moyen pour texte moins visible */
+    --muted-foreground: 220 4% 50%; /* Gris un peu plus sombre */
+    --accent: 220 40% 35%; /* Bleu marine (même que primary) */
     --accent-foreground: 0 0% 100%; /* White */
-    --destructive: 0 70% 50%; /* Adjusted for dark theme visibility */
+    --destructive: 10 65% 50%; /* Rouge sobre et lisible */
     --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 18%; /* Border color, slightly lighter than card */
-    --input: 0 0% 18%; /* Input background, same as border */
-    --ring: 210 100% 65%; /* Lighter blue for focus rings */
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --border: 220 8% 90%; /* Bordure très légère et discrète */
+    --input: 0 0% 100%; /* Blanc pur pour inputs */
+    --ring: 220 40% 45%; /* Bleu un peu plus clair pour focus rings */
+    --chart-1: 220 40% 35%;
+    --chart-2: 200 35% 45%;
+    --chart-3: 200 25% 55%;
+    --chart-4: 220 20% 50%;
+    --chart-5: 200 30% 60%;
     --radius: 0.5rem;
 
-    /* Dark theme sidebar variables (applied because .dark is on html) */
-    --sidebar-background: 218 41% 5%; /* Even darker than main bg for depth */
-    --sidebar-foreground: 0 0% 69%; /* Argent */
-    --sidebar-primary: 210 100% 52%; /* Blue */
+    /* Dark theme sidebar variables */
+    --sidebar-background: 220 8% 96%; /* Très légèrement grisé */
+    --sidebar-foreground: 220 8% 20%; /* Gris foncé */
+    --sidebar-primary: 220 40% 35%; /* Bleu marine */
     --sidebar-primary-foreground: 0 0% 100%; /* White */
-    --sidebar-accent: 0 0% 15%; /* Hover for non-active items in sidebar */
-    --sidebar-accent-foreground: 0 0% 80%; /* Slightly brighter on hover */
-    --sidebar-border: 0 0% 18%;
-    --sidebar-ring: 210 100% 65%; /* Lighter Blue for focus rings in sidebar */
+    --sidebar-accent: 220 8% 92%; /* Gris clair hover */
+    --sidebar-accent-foreground: 220 8% 20%; /* Gris foncé */
+    --sidebar-border: 220 8% 90%;
+    --sidebar-ring: 220 40% 45%; /* Bleu pour focus rings */
   }
 
   /* Light theme overrides if .dark is removed from html tag */
   .light {
     --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
+    --foreground: 220 8% 20%;
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card-foreground: 220 8% 20%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 210 100% 52%; 
+    --popover-foreground: 220 8% 20%;
+    --primary: 220 40% 35%; 
     --primary-foreground: 0 0% 100%; 
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 210 100% 52%; 
+    --secondary: 220 8% 92%;
+    --secondary-foreground: 220 8% 20%;
+    --muted: 220 4% 60%;
+    --muted-foreground: 220 4% 50%;
+    --accent: 220 40% 35%; 
     --accent-foreground: 0 0% 100%; 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 210 100% 65%; 
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --destructive: 10 65% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 8% 90%;
+    --input: 0 0% 100%;
+    --ring: 220 40% 45%; 
+    --chart-1: 220 40% 35%;
+    --chart-2: 200 35% 45%;
+    --chart-3: 200 25% 55%;
+    --chart-4: 220 20% 50%;
+    --chart-5: 200 30% 60%;
     
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 210 100% 52%;
+    --sidebar-background: 220 8% 96%;
+    --sidebar-foreground: 220 8% 20%;
+    --sidebar-primary: 220 40% 35%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 210 100% 65%;
+    --sidebar-accent: 220 8% 92%;
+    --sidebar-accent-foreground: 220 8% 20%;
+    --sidebar-border: 220 8% 90%;
+    --sidebar-ring: 220 40% 45%;
   }
 }
 

@@ -1,3 +1,8 @@
+/**
+ * @author Godfree AKAKPO
+ * Document Analysis Flow Service
+ * Analyzes PDF legal documents and identifies sensitive points
+ */
 
 'use server';
 /**
@@ -8,7 +13,7 @@
  * - DocumentAnalysisOutput - The return type for the analyzeDocument function.
  */
 
-import {ai} from '@/ai/genkit';
+import {assistantEngine} from '@/services/assistant-engine';
 import {z} from 'genkit';
 
 const DocumentAnalysisInputSchema = z.object({
@@ -32,7 +37,7 @@ export async function analyzeDocument(input: DocumentAnalysisInput): Promise<Doc
   return documentAnalyzerFlow(input);
 }
 
-const prompt = ai.definePrompt({
+const prompt = assistantEngine.definePrompt({
   name: 'documentAnalyzerPrompt',
   input: {schema: DocumentAnalysisInputSchema},
   output: {schema: DocumentAnalysisOutputSchema},
@@ -73,7 +78,7 @@ Structurez votre sortie pour correspondre au schéma JSON attendu (summary, sens
 
 const baseDisclaimer = "Cette analyse est générée par une intelligence artificielle et est fournie à titre informatif uniquement. Elle ne constitue EN AUCUN CAS un avis juridique et ne saurait remplacer la consultation d'un avocat qualifié pour des conseils spécifiques à votre situation.";
 
-const documentAnalyzerFlow = ai.defineFlow(
+const documentAnalyzerFlow = assistantEngine.defineFlow(
   {
     name: 'documentAnalyzerFlow',
     inputSchema: DocumentAnalysisInputSchema,

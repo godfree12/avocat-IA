@@ -1,24 +1,31 @@
+/**
+ * @author Godfree AKAKPO
+ * Root layout component for the legal cabinet website
+ */
 
 import type { Metadata } from 'next';
-import { Orbitron, Inter } from 'next/font/google';
+import { Poppins, Lora } from 'next/font/google';
 import './globals.css';
 import { HeaderNavigationLayout } from '@/components/layout/sidebar-layout'; 
 import { Toaster } from "@/components/ui/toaster";
 
-const orbitronFont = Orbitron({
+const poppinsFont = Poppins({
+  weight: ['300', '400', '500', '600', '700'],
   subsets: ['latin'],
-  variable: '--font-orbitron',
-  weight: ['400', '500', '700', '900'],
+  variable: '--font-poppins',
+  display: 'swap',
 });
 
-const interFont = Inter({
+const loraFont = Lora({
+  weight: ['400', '500', '600', '700'],
   subsets: ['latin'],
-  variable: '--font-inter',
+  variable: '--font-lora',
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
-  title: "Maître Jean Dupont - Avocat d'élite à Paris",
-  description: "Cabinet d'avocat moderne et innovant. Expertise juridique et solutions IA pour défendre vos destins.",
+  title: "Cabinet d'Avocat Jean Dupont - Paris",
+  description: "Cabinet d'avocat spécialisé en droit des affaires, pénal, travail et famille. Services juridiques professionnels avec outils d'assistance intelligents.",
 };
 
 export default function RootLayout({
@@ -28,7 +35,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" className="dark">
-      <body className={`${orbitronFont.variable} ${interFont.variable} font-sans antialiased scroll-smooth`}>
+      <body className={`${poppinsFont.variable} ${loraFont.variable} font-sans antialiased scroll-smooth`}>
         <HeaderNavigationLayout>{children}</HeaderNavigationLayout>
         <Toaster />
       </body>
