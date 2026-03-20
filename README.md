@@ -37,13 +37,13 @@ L’objectif du projet était de concevoir une interface claire, fonctionnelle e
 ## Aperçu
 
 ### Outils d’assistance
-![Outils](./im1.png)
+![Outils](./im3.png)
 
 ### Assistant — interaction
-![Assistant](./im2.png)
+![Assistant](./im1.png)
 
 ### Exemple de réponse
-![Assistant réponse](./im3.png)
+![Assistant réponse](./im2.png)
 
 ---
 
