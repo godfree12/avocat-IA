@@ -459,7 +459,7 @@ export default function CabinetLandingPage() {
                         </Link>
                       ) : (
                         <>
-                          {tool.actionText}
+                          {tool.actionText} 
                           <ChevronRight className="ml-2 h-4 w-4" />
                         </>
                       )}
